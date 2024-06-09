@@ -1,6 +1,4 @@
 #!/bin/bash
-## Application installation script
-
 
 # Global strings
 DIR=
@@ -8,43 +6,56 @@ DIR=
 
 # Install apps
 install_kali_apps() {
-        echo -e "\[*] Installing Kali Specific Apps..."
+        
+        "\[*] Installing Kali Specific apps only..."
         # Rustscan
-        #
-}      
+                https://github.com/RustScan/RustScan/releases/download/2.2.3/rustscan_2.2.3_amd64.deb
 
-install_all_apps() {
-            # Everything
-            sudo apt install i3 polybar nitrogen rofi
-            $ git clone --depth=1 https://github.com/adi1090x/polybar-themes.git
-            cd polybar-themes
-            chmod +x setup.sh
+        # Kiterunner       
 
+
+}
+
+
+
+install_i3_desktop() {
+        # Install i3 desktop
+        sudo apt install i3 polybar nitrogen rofi
+
+        # Polybar themes
+        git clone --depth=1 https://github.com/adi1090x/polybar-themes.git
+        cd $HOME/polybar-themes
+        chmod +x setup.sh
+
+        # Copy i3 pre-config to .config/i3/ directory
+        cp i3/config $HOME/.config/i3/
+
+        # Copy nit
+
+
+        # Append config to polybar config
+        
 }
 
 main() {
         clear
         cat <<- EOF
-                [*] Installing Kali Specific Apps
-                
-                [1] Only Kali specific apps
-                [2] Everything (including i3)
+                [*] Installing i3 desktop, kali apps and configuring...
 
+                [1] Kali specific apps (Rustscan, Nuclie)
+                [2] i3 desktop packages and configs
+        
             EOF
 
-            read -p "[?] Select Option : "
+            read -p "[?] SELECT OPTION : "
 
             if [[ $REPLY == "1" ]]; then
-		            STYLE='simple'
-		            install_fonts
-		            install_themes
+                        install_kali_apps
 	        elif [[ $REPLY == "2" ]]; then
-		            STYLE='bitmap'
-		            install_fonts
-		            install_themes
+                        install_i3_desktop
 	        else
-		            echo -e "\n[!] Invalid Option, Exiting...\n"
-		            exit 1
+		        echo -e "\n[!] Invalid Option, Exiting...\n"
+		        exit 1
 	        fi
 }
 

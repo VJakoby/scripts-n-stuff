@@ -32,22 +32,23 @@ main() {
 
                 [1] Kali specific apps
                 [2] i3 desktop packages and pre-defined configs
-                [3] Both        
-            EOF
+                [3] Both
+                     
+        EOF
 
-            read -p "[?] SELECT OPTION : "
+        read -p "[?] SELECT OPTION : "
 
-            if [[ $REPLY == "1" ]]; then
-                        install_kali_apps
-	        elif [[ $REPLY == "2" ]]; then
-                        install_i3_desktop
-	        elif [[ $REPLY == "3" ]]; then
-                        install_kali_apps
-                        install_i3_desktop
-                else
-		        echo -e "\n[!] Invalid Option, Exiting...\n"
-		        exit 1
-	        fi
+        if [[ $REPLY == "1" ]]; then
+                install_kali_apps
+        elif [[ $REPLY == "2" ]]; then
+                install_i3_desktop
+	elif [[ $REPLY == "3" ]]; then
+                install_kali_apps
+                install_i3_desktop
+        else
+	        echo -e "\n[!] Invalid Option, Exiting...\n"
+		exit 1
+	fi
 }
 
 main

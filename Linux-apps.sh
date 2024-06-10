@@ -1,22 +1,13 @@
 #!/bin/bash
 
-# Global strings
-DIR=
-
-
 # Install apps
 install_kali_apps() {
-        
-        "\[*] Installing Kali Specific apps only..."
-        # Rustscan
-                https://github.com/RustScan/RustScan/releases/download/2.2.3/rustscan_2.2.3_amd64.deb
+        "\[*] Installing Kali specific apps only..."
 
-        # Kiterunner       
-
-
+        # RustScan
+        wget https://github.com/RustScan/RustScan/releases/download/2.2.3/rustscan_2.2.3_amd64.deb
+        dpkg -i rustscan_*
 }
-
-
 
 install_i3_desktop() {
         # Install i3 desktop
@@ -27,24 +18,21 @@ install_i3_desktop() {
         cd $HOME/polybar-themes
         chmod +x setup.sh
 
-        # Copy i3 pre-config to .config/i3/ directory
+        # Copy i3 pre-config to .config/i3/ directory on host
         cp i3/config $HOME/.config/i3/
 
-        # Copy nit
-
-
-        # Append config to polybar config
-        
+        # Git-dumper
+        pip install git-dumper
 }
 
 main() {
         clear
         cat <<- EOF
-                [*] Installing i3 desktop, kali apps and configuring...
+                [*] Choose your option to install...
 
-                [1] Kali specific apps (Rustscan, Nuclie)
-                [2] i3 desktop packages and configs
-        
+                [1] Kali specific apps
+                [2] i3 desktop packages and pre-defined configs
+                [3] Both        
             EOF
 
             read -p "[?] SELECT OPTION : "
@@ -53,7 +41,10 @@ main() {
                         install_kali_apps
 	        elif [[ $REPLY == "2" ]]; then
                         install_i3_desktop
-	        else
+	        elif [[ $REPLY == "3" ]]; then
+                        install_kali_apps
+                        install_i3_desktop
+                else
 		        echo -e "\n[!] Invalid Option, Exiting...\n"
 		        exit 1
 	        fi

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Install apps
 install_kali_apps() {
@@ -35,7 +35,7 @@ main() {
                 [3] Both
                      
         EOF
-
+        
         read -p "[?] SELECT OPTION : "
 
         if [[ $REPLY == "1" ]]; then

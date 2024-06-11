@@ -2,29 +2,38 @@
 
 # Install apps
 install_kali_apps() {
-    echo "[*] Installing Kali specific apps only..."
+    printf "[*] Installing Kali specific apps only..."
 
     # RustScan
+    printf "[*] Downloading and installing RustScan..."
+
     wget https://github.com/RustScan/RustScan/releases/download/2.2.3/rustscan_2.2.3_amd64.deb
     sudo dpkg -i rustscan_*
     sudo apt-get install -f
+
+    printf "[*] Installing git-dumper..."
+    pip install git-dumper
+
+    printf "[*] Installing rEngine..."
+    git clone https://github.com/yogeshojha/rengine $HOME/rengine
+    cd rengine || exit
+
+    printf "[*] Don't forget to edit the file /rengine/.env .."
 }
 
 install_i3_desktop() {
-    # Install i3 desktop
+
+    printf "[*] Installing i3, polybar, nitrogen, rofi..."
     sudo apt install -y i3 polybar nitrogen rofi
 
-    # Polybar themes
-    git clone --depth=1 https://github.com/adi1090x/polybar-themes.git
+    printf "[*] Downloading Polybar themes..."
+    git clone --depth=1 https://github.com/adi1090x/polybar-themes.git $HOME/polybar-themes
     cd $HOME/polybar-themes || exit
     chmod +x setup.sh
-
-    # Copy i3 pre-config to .config/i3/ directory on host
+    
+    printf "[*] Copying i3 configs..."
     mkdir -p $HOME/.config/i3
     cp i3/config $HOME/.config/i3/
-
-    # Git-dumper
-    pip install git-dumper
 }
 
 main() {
@@ -32,12 +41,13 @@ main() {
     cat <<EOF
 [*] Choose your option to install...
 
-[1] Kali specific apps
+
+[1] Kali specific apps 
 [2] i3 desktop packages and pre-defined configs
 [3] Both
 EOF
 
-    read -p "[?] SELECT OPTION : " option
+    read -p "[?] Select option : " option
 
     if [[ $option == "1" ]]; then
         install_kali_apps
@@ -47,7 +57,7 @@ EOF
         install_kali_apps
         install_i3_desktop
     else
-        echo -e "\n[!] Invalid Option, Exiting...\n"
+        printf -e "\n[!] Invalid Option, Exiting...\n"
         exit 1
     fi
 }

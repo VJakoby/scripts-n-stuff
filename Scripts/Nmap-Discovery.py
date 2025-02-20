@@ -11,7 +11,7 @@ import re
 
 def run_nmap_scan(target_network):
     # Run the Nmap discovery scan
-    command = ["nmap", "-sn", target_network]
+    command = ["nmap", "-sn", "-T4", "-n", target_network]
     result = subprocess.run(command, capture_output=True, text=True)
 
     # Check if the command was successful

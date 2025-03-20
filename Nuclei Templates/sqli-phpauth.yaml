@@ -5,7 +5,6 @@ info:
   severity: "high"
   description: "Detects potential SQL injection vulnerabilities via POST request on PHP auth."
   tags: sqli injection
-
 requests:
   - method: POST
     path:

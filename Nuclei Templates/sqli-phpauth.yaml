@@ -1,7 +1,7 @@
 id: sql-injection
 info:
   name: "SQL Injection Detection via POST request in PHP Auth."
-  author: "Jakob Vango"
+  author: "Jakoby"
   severity: "high"
   description: "Detects potential SQL injection vulnerabilities via POST request on PHP auth."
   tags: sqli injection

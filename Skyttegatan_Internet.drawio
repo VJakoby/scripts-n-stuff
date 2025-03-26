@@ -138,6 +138,11 @@
         <mxCell id="jBqJRrh32sN_zJvktMY4-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1.006;entryY=0.587;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="jBqJRrh32sN_zJvktMY4-13" target="jBqJRrh32sN_zJvktMY4-3">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+        <mxCell id="jBqJRrh32sN_zJvktMY4-30" value="PoE" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="jBqJRrh32sN_zJvktMY4-24">
+          <mxGeometry x="-0.1706" y="2" relative="1" as="geometry">
+            <mxPoint y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
         <mxCell id="jBqJRrh32sN_zJvktMY4-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.344;entryY=0.077;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="jBqJRrh32sN_zJvktMY4-22">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="836" y="750.3349999999998" as="sourcePoint" />
@@ -147,6 +152,28 @@
               <mxPoint x="816" y="1114" />
             </Array>
           </mxGeometry>
+        </mxCell>
+        <mxCell id="jBqJRrh32sN_zJvktMY4-29" value="PoE" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="jBqJRrh32sN_zJvktMY4-25">
+          <mxGeometry x="0.0612" y="2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jBqJRrh32sN_zJvktMY4-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="jBqJRrh32sN_zJvktMY4-31" target="jBqJRrh32sN_zJvktMY4-3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="278" y="846" />
+              <mxPoint x="278" y="950" />
+              <mxPoint x="835" y="950" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jBqJRrh32sN_zJvktMY4-33" value="PoE" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="jBqJRrh32sN_zJvktMY4-32">
+          <mxGeometry x="-0.1145" y="-1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jBqJRrh32sN_zJvktMY4-31" value="TP-Link EAP225 Outdoor AP" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://cf-images.dustin.eu/cdn-cgi/image/fit=contain,format=auto,quality=75,width=828,fit=contain/image/d2000010011307604/tp-link-eap225-outdoor-access-point.png;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="166.16" y="734" width="112" height="112" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

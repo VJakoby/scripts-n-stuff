@@ -19,11 +19,11 @@ sudo apt update
 sudo apt install -y i3 i3blocks rofi feh fonts-font-awesome bc acpi
 
 # 2. Downloading rofi themes for future use
-echo "[+] Downloading rofi themes"
-git clone --depth=1 https://github.com/adi1090x/rofi.git
-cd rofi
-chmod +x setup.sh
-./setup.sh
+#echo "[+] Downloading rofi themes"
+#git clone --depth=1 https://github.com/adi1090x/rofi.git
+#cd rofi
+##chmod +x setup.sh
+#./setup.sh
 
 # 2. Set up i3 config
 echo "[+] Setting up i3 config..."
@@ -38,7 +38,7 @@ cp "$SCRIPT_DIR/i3blocks/rofi-launch.sh" ~/.config/i3blocks/
 cp "$SCRIPT_DIR/i3blocks/cpu.sh" ~/.config/i3blocks/
 
 mkdir p ~/.config/rofi
-cp "$SCRIPT_DIR/rofi/config.rasi" ~/.config/rofi/
+cp "$SCRIPT_DIR/rofi/config.rasi" ~/.config/rofi/config.rasi
 
 # 4. Setup LightDM (optional but recommended)
 echo "[+] Ensuring lightdm is set as display manager..."

@@ -1,0 +1,9 @@
+
+configuration {
+  modi: "combi";
+  combi-modi: "drun,window";
+  show-icons: true;
+
+  display-drun: "";
+  display-window: "";
+}

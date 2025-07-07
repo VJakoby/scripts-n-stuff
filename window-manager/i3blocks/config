@@ -1,0 +1,31 @@
+# i3blocks config file
+
+[rofi]
+command=~/.config/i3blocks/rofi-launch.sh "🕹️"
+interval=once
+markup=pango
+
+[clock]
+command=date '+%Y-%m-%d %H:%M'
+interval=5
+label=🕒
+
+[cpu_usage]
+interval=1
+command=~/.config/i3blocks/cpu.sh
+min_width=⣾⣄ 100.00%
+
+[memory]
+command=free -h | awk '/^Mem:/ {print $3 "/" $2}'
+interval=5
+label=🧠
+
+[eth0_ip]
+command=ip -4 addr show eth0 | awk '/inet / {print $2}' | cut -d/ -f1
+interval=10
+label=📶 eth0:
+
+[tun0_ip]
+command=ip -4 addr show tun0 | awk '/inet / {print $2}' | cut -d/ -f1
+interval=10
+label=🔒 tun0:

@@ -1,12 +1,15 @@
 #!/bin/bash
 # Script that installs i3 and dependencies
 
-# Rofi themes are available here
+## Rofi themes are available here
+# https://github.com/newmanls/rofi-themes-collection?tab=readme-ov-file
+
+
 # https://github.com/adi1090x/rofi
-#git clone --depth=1 https://github.com/adi1090x/rofi.git
-#cd rofi
-#chmod +x setup.sh
-#./setup.sh
+# git clone --depth=1 https://github.com/adi1090x/rofi.git
+# cd rofi
+# chmod +x setup.sh
+# ./setup.sh
 
 set -e
 

@@ -5,11 +5,6 @@ command=~/.config/i3blocks/rofi-launch.sh "🕹️"
 interval=once
 markup=pango
 
-[clock]
-command=date '+%Y-%m-%d %H:%M'
-interval=5
-label=🕒
-
 [cpu_usage]
 interval=1
 command=~/.config/i3blocks/cpu.sh
@@ -34,3 +29,8 @@ label=📡 wlan0:
 command=ip -4 addr show tun0 | awk '/inet / {print $2}' | cut -d/ -f1
 interval=10
 label=🔒 tun0:
+
+[clock]
+command=date '+%Y-%m-%d %H:%M'
+interval=5
+label=🕒

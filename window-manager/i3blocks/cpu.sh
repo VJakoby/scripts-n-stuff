@@ -1,49 +1,83 @@
 #!/bin/bash
 
-SAVE2=/tmp/i3blocks_cpu_usage_4
+# Define the path for the temporary file to store previous CPU stats
+TEMP_FILE="/tmp/i3blocks_cpu_stats_sh"
 
-declare -A graph=(
-  ["11"]="\u28C0" # ⣀
-  ["12"]="\u28E0" # ⣠
-  ["13"]="\u28F0" # ⣰
-  ["14"]="\u28F8" # ⣸
-  ["21"]="\u28C4" # ⣄
-  ["22"]="\u28E4" # ⣤
-  ["23"]="\u28F4" # ⣴
-  ["24"]="\u28FC" # ⣼
-  ["31"]="\u28C6" # ⣆
-  ["32"]="\u28E6" # ⣦
-  ["33"]="\u28F6" # ⣶
-  ["34"]="\u28FE" # ⣾
-  ["41"]="\u28C7" # ⣇
-  ["42"]="\u28E7" # ⣧
-  ["43"]="\u28F7" # ⣷
-  ["44"]="\u28FF" # ⣿
-)
+# Function to get current CPU times
+get_cpu_times() {
+    # Read the first line of /proc/stat (overall CPU)
+    # Example: cpu  2255 34 2289 2262556 6290 1 0 0 0 0
+    # Fields: user nice system idle iowait irq softirq steal guest guest_nice
+    read -r _ user nice system idle iowait irq softirq steal guest guest_nice < /proc/stat
 
-if [[ ! -f $SAVE2 ]]
-then
-  echo 1 1 1 1 > $SAVE2
-fi
+    # Calculate total CPU time (sum of all fields)
+    total_time=$((user + nice + system + idle + iowait + irq + softirq + steal + guest + guest_nice))
 
-val=(`cat $SAVE2`)
+    # Calculate idle CPU time (idle + iowait)
+    idle_time=$((idle + iowait))
 
-usage=$((10000 - `mpstat 1 1 | tail -1 | rev | cut -d ' ' -f 1 | rev | tr -d .`))
+    echo "$total_time $idle_time"
+}
 
-if [[ $usage -ge 7500 ]]
-then
-  val=(${val[@]:1:3} 4)
-elif [[ $usage -ge 5000 ]]
-then
-  val=(${val[@]:1:3} 3)
-elif [[ $usage -ge 2500 ]]
-then
-  val=(${val[@]:1:3} 2)
-else
-  val=(${val[@]:1:3} 1)
-fi
+# Read previous CPU stats from the temporary file
+read_previous_stats() {
+    if [[ -f "$TEMP_FILE" ]]; then
+        read -r prev_total prev_idle < "$TEMP_FILE"
+        echo "$prev_total $prev_idle"
+    else
+        echo "0 0" # Return 0s if file doesn't exist (first run)
+    fi
+}
 
-echo -ne ${graph[${val[0]}${val[1]}]}${graph[${val[2]}${val[3]}]}
-printf " %.2f%%\n" $((usage / 100)).$((usage % 100))
+# Main logic
+main() {
+    # Get current CPU times
+    current_times=$(get_cpu_times)
+    current_total=$(echo "$current_times" | awk '{print $1}')
+    current_idle=$(echo "$current_times" | awk '{print $2}')
 
-echo ${val[@]} > $SAVE2
+    # Read previous CPU times
+    previous_times=$(read_previous_stats)
+    prev_total=$(echo "$previous_times" | awk '{print $1}')
+    prev_idle=$(echo "$previous_times" | awk '{print $2}')
+
+    # Store current times for the next run
+    echo "$current_total $current_idle" > "$TEMP_FILE"
+
+    # Calculate differences
+    total_diff=$((current_total - prev_total))
+    idle_diff=$((current_idle - prev_idle))
+
+    # Avoid division by zero on first run or if no activity
+    if [[ "$total_diff" -eq 0 ]]; then
+        cpu_percentage=0.0
+    else
+        # Calculate CPU usage (using bc for floating-point arithmetic)
+        # (total_diff - idle_diff) is the "busy" time
+        cpu_percentage=$(echo "scale=2; (($total_diff - $idle_diff) / $total_diff) * 100" | bc)
+    fi
+
+    # Ensure percentage is within 0-100 range
+    if (( $(echo "$cpu_percentage < 0" | bc -l) )); then
+        cpu_percentage=0.0
+    elif (( $(echo "$cpu_percentage > 100" | bc -l) )); then
+        cpu_percentage=100.0
+    fi
+
+    # Determine color based on usage
+    color="#00FF00" # Green (low usage)
+    if (( $(echo "$cpu_percentage > 80" | bc -l) )); then
+        color="#FF0000" # Red (high usage)
+    elif (( $(echo "$cpu_percentage > 50" | bc -l) )); then
+        color="#FFFF00" # Yellow (medium usage)
+    fi
+
+    # i3blocks output format: Full text\nShort text\nColor
+    full_text="CPU: $(printf "%.1f" "$cpu_percentage")%"
+    echo "$full_text"
+    echo "$full_text" # Short text can be the same
+    echo "$color"
+}
+
+# Execute the main function
+main

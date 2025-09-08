@@ -11,8 +11,8 @@ set $mod Mod4
 bar {
     position top
     status_command i3blocks
-    font pango: DejaVu Sans Mono 10
-    height 27
+    font pango: DejaVu Sans Book 11
+    height 28
 }
 
 # Wallpaper
@@ -64,7 +64,7 @@ floating_modifier $mod
 tiling_drag modifier titlebar
 
 # start a terminal
-bindsym $mod+Return exec i3-sensible-terminal
+bindsym $mod+Return exec terminator
 
 # kill focused window
 bindsym $mod+Shift+q kill

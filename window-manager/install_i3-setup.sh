@@ -4,49 +4,55 @@
 ## Rofi themes are available here
 # https://github.com/newmanls/rofi-themes-collection?tab=readme-ov-file
 
-
-# https://github.com/adi1090x/rofi
-# git clone --depth=1 https://github.com/adi1090x/rofi.git
-# cd rofi
-# chmod +x setup.sh
-# ./setup.sh
+#!/bin/bash
+# Script that installs i3 and dependencies
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Helper function for safe copy
+safe_copy() {
+    src="$1"
+    dest="$2"
+    if [ -f "$src" ]; then
+        cp "$src" "$dest"
+        echo "   Copied: $src → $dest"
+    else
+        echo "   ⚠️  Warning: missing file $src, skipped."
+    fi
+}
+
 # 1. Install required packages
 echo "[+] Installing packages..."
 sudo apt update
-#sudo apt install -y i3 polybar rofi feh fonts-font-awesome pavucontrol acpi lm-sensors lightdm i3blocks
-sudo apt install -y i3 i3blocks rofi feh fonts-font-awesome bc acpi
-
-# 2. Downloading rofi themes for future use
-#echo "[+] Downloading rofi themes"
-#git clone --depth=1 https://github.com/adi1090x/rofi.git
-#cd rofi
-##chmod +x setup.sh
-#./setup.sh
+sudo apt install -y i3 i3blocks rofi feh fonts-font-awesome5 bc acpi lightdm pavucontrol lm-sensors
 
 # 2. Set up i3 config
 echo "[+] Setting up i3 config..."
 mkdir -p ~/.config/i3
-cp "$SCRIPT_DIR/i3/config" ~/.config/i3/config
+safe_copy "$SCRIPT_DIR/i3/config" ~/.config/i3/config
 
 # 3. Setup i3blocks config
 echo "[+] Setting up i3blocks"
 mkdir -p ~/.config/i3blocks
-cp "$SCRIPT_DIR/i3blocks/config" ~/.config/i3blocks/config
-cp "$SCRIPT_DIR/i3blocks/rofi-launch.sh" ~/.config/i3blocks/
-cp "$SCRIPT_DIR/i3blocks/cpu.sh" ~/.config/i3blocks/
+safe_copy "$SCRIPT_DIR/i3blocks/config" ~/.config/i3blocks/config
+safe_copy "$SCRIPT_DIR/i3blocks/rofi-launch.sh" ~/.config/i3blocks/rofi-launch.sh
+safe_copy "$SCRIPT_DIR/i3blocks/cpu.sh" ~/.config/i3blocks/cpu.sh
 
-mkdir p ~/.config/rofi
-cp "$SCRIPT_DIR/rofi/config.rasi" ~/.config/rofi/config.rasi
+# 4. Setup rofi config
+echo "[+] Setting up rofi config"
+mkdir -p ~/.config/rofi
+safe_copy "$SCRIPT_DIR/rofi/config.rasi" ~/.config/rofi/config.rasi
 
-# 4. Setup LightDM (optional but recommended)
+# 5. Setup LightDM (optional but recommended)
 echo "[+] Ensuring lightdm is set as display manager..."
-sudo debconf-set-selections <<< "lightdm shared/default-x-display-manager select lightdm"
-sudo dpkg-reconfigure -f noninteractive lightdm
+if dpkg -l | grep -q lightdm; then
+    sudo debconf-set-selections <<< "lightdm shared/default-x-display-manager select lightdm"
+    sudo dpkg-reconfigure -f noninteractive lightdm
+else
+    echo "   ⚠️  Warning: lightdm not installed correctly."
+fi
 
 # 6. Done
 echo -e "\n✅ All done!"

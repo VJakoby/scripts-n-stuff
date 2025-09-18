@@ -4,5 +4,5 @@
 ## Scripts
 - Contains custom scripts for NMAP, etc
 - 
-## Window-manager..
+## Window-manager
 - Contains i3, i3blocks and rofi installation script and config files

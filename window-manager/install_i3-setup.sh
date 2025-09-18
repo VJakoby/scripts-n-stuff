@@ -26,7 +26,7 @@ safe_copy() {
 # 1. Install required packages
 echo "[+] Installing packages..."
 sudo apt update
-sudo apt install -y i3 i3blocks rofi feh fonts-font-awesome5 bc acpi lightdm pavucontrol lm-sensors
+sudo apt install -y i3 i3blocks rofi feh fonts-font-awesome bc acpi lightdm pavucontrol lm-sensors
 
 # 2. Set up i3 config
 echo "[+] Setting up i3 config..."

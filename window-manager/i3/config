@@ -15,7 +15,6 @@ bar {
 
 # ------- Wallpaper: Setting a wallpaper, put in /Pictures/wallpaper.jpg
 exec_always --no-startup-id feh --bg-scale ~/Pictures/wallpaper.jpg
-exec --no-startup-id picom
 
 # ------- Rofi launcher
 # config location --> ~/.config/rofi/config.rasi

@@ -1,13 +1,11 @@
 # i3 config file (v4)
-#
 # Please see https://i3wm.org/docs/userguide.html for a complete reference!
 
-## -------------------------------------- Custom ---------------------------------------------- #
-# Mod 4 = Start(Win)
+## -------------------------------------- Custom config ---------------------------------------------- ##
+# ------- Setting MOD to Start(Win) button, which is mod 4.
 set $mod Mod4
 
-# i3blocks statusbar
-# config location --> ~/.config/i3blocks/
+# ------- i3blocks statusbar, config location in ~/.config/i3blocks/
 bar {
     position top
     status_command i3blocks
@@ -15,16 +13,26 @@ bar {
     height 28
 }
 
-# Wallpaper
-# setting a wallpaper --> ~/Pictures/wallpaper.jpg
+# ------- Wallpaper: Setting a wallpaper, put in /Pictures/wallpaper.jpg
 exec_always --no-startup-id feh --bg-scale ~/Pictures/wallpaper.jpg
 exec --no-startup-id picom
 
-# Rofi launcher
+# ------- Rofi launcher
 # config location --> ~/.config/rofi/config.rasi
 bindsym $mod+d exec "rofi -show combi"
 
-## ---------------------------------------------------------------------------------------- #
+# ------- Setting "dark purple" color for the titlebar
+# class                 border  backgr. text    indicator child_border
+client.focused          #630f8b #630f8b #d6c4f0 #630f8b   #630f8b
+client.focused_inactive #444444 #222222 #888888 #292d2e   #222222
+client.unfocused        #444444 #222222 #888888 #292d2e   #222222
+client.urgent           #2f343a #900000 #ffffff #900000   #900000
+
+# ------- Setting up scratchpad
+bindsym $mod+minus scratchpad show
+bindsym $mod+Shift+minus move scratchpad
+
+## ----------------------------------------------------------------------------------------------------- ##
 
 
 # This font is widely installed, provides lots of unicode glyphs, right-to-left

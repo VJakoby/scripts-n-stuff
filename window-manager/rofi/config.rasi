@@ -3,9 +3,8 @@ configuration {
   modi: "combi";
   combi-modi: "drun,window";
   show-icons: true;
-
   display-drun: "";
   display-window: "";
 }
-# ----- Setting "default" theme. Can be changed with mod + d, search for "Rofi Theme Selector"
+
 @theme "/usr/share/rofi/themes/glue_pro_blue.rasi"

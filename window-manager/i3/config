@@ -25,6 +25,9 @@ bar {
 }
 
 # ------- Wallpaper: Setting a wallpaper, put in /Pictures/wallpaper.jpg
+# wget https://www.kali.org/wallpapers/images/YEAR/kali-NAME.jpg
+# cp kali-NAME.jpg ~/Pictures/wallpaper.jpg
+
 exec_always --no-startup-id feh --bg-scale ~/Pictures/wallpaper.jpg
 
 # ------- Rofi launcher

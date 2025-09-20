@@ -9,8 +9,19 @@ set $mod Mod4
 bar {
     position top
     status_command i3blocks
-    font pango: Cantarell Bold 11         # Changeable
-    height 28
+    font pango: Cantarell Bold 11
+    height 26
+    colors {
+#       background #630f8b
+        statusline #ffffff
+        separator  #aaaaaa
+
+        focused_workspace  #630f8b #630f8b #ffffff
+        active_workspace   #444444 #630f8b #ffffff
+        inactive_workspace #222222 #222222 #888888
+        urgent_workspace   #900000 #630f8b #ffffff
+        binding_mode       #900000 #630f8b #ffffff
+    }
 }
 
 # ------- Wallpaper: Setting a wallpaper, put in /Pictures/wallpaper.jpg

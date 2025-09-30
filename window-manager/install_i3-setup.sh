@@ -26,7 +26,7 @@ safe_copy() {
 # 1. Install required packages
 echo "[+] Installing packages..."
 sudo apt update
-sudo apt install -y i3 i3blocks rofi feh fonts-font-awesome bc acpi lightdm pavucontrol lm-sensors
+sudo apt install -y i3 i3blocks rofi polybar feh fonts-font-awesome bc acpi lightdm pavucontrol lm-sensors
 
 # 2. Set up i3 config
 echo "[+] Setting up i3 config..."
@@ -40,12 +40,17 @@ safe_copy "$SCRIPT_DIR/i3blocks/config" ~/.config/i3blocks/config
 safe_copy "$SCRIPT_DIR/i3blocks/rofi-launch.sh" ~/.config/i3blocks/rofi-launch.sh
 safe_copy "$SCRIPT_DIR/i3blocks/cpu.sh" ~/.config/i3blocks/cpu.sh
 
-# 4. Setup rofi config
+# 4. Setup polybar
+echo "[+] Setting up polybar"
+mkdir -p ~/.config/polybar
+safe_copy "$SCRIPT_DIR/polybar/config.ini" ~/.config/polybar/config.ini
+
+# 5. Setup rofi config
 echo "[+] Setting up rofi config"
 mkdir -p ~/.config/rofi
 safe_copy "$SCRIPT_DIR/rofi/config.rasi" ~/.config/rofi/config.rasi
 
-# 5. Setup LightDM (optional but recommended)
+# 6. Setup LightDM (optional but recommended)
 echo "[+] Ensuring lightdm is set as display manager..."
 if dpkg -l | grep -q lightdm; then
     sudo debconf-set-selections <<< "lightdm shared/default-x-display-manager select lightdm"
@@ -54,6 +59,6 @@ else
     echo "   ⚠️  Warning: lightdm not installed correctly."
 fi
 
-# 6. Done
-echo -e "\n✅ All done!"
+# 7. Done
+echo -e "\n✅ Everything completed!"
 echo "Reboot and at the login screen, choose i3 session (bottom-right gear icon if available)."

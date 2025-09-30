@@ -24,6 +24,15 @@ bar {
     }
 }
 
+# ------- Polybar statusbar, config location in ~/.config/polybar/.
+# Choose either polybar or i3blocks
+
+# Kill any existing polybar instances
+exec --no-startup-id killall -q polybar
+
+# Launch your polybar config
+exec_always --no-startup-id polybar main
+
 # ------- Wallpaper: Setting a wallpaper, put in /Pictures/wallpaper.jpg
 # wget https://www.kali.org/wallpapers/images/YEAR/kali-NAME.jpg
 # cp kali-NAME.jpg ~/Pictures/wallpaper.jpg

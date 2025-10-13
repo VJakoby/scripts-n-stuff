@@ -50,17 +50,29 @@ echo "[+] Setting up rofi config"
 mkdir -p ~/.config/rofi
 safe_copy "$SCRIPT_DIR/rofi/config.rasi" ~/.config/rofi/config.rasi
 
-# 6. Set DPI for X11 (Defaul value is 96, Setting to 98)
-echo "[+] Setting DPI to 100 via ~/.Xresources..."
+# 6. Set DPI and font rendering for X11
+echo "[+] Configuring DPI and font rendering via ~/.Xresources..."
 
 # Create or update ~/.Xresources safely
-if grep -q "^Xft.dpi:" ~/.Xresources 2>/dev/null; then
-    sed -i 's/^Xft.dpi:.*/Xft.dpi: 100/' ~/.Xresources
-    echo "   Updated existing DPI setting in ~/.Xresources"
-else
-    echo "Xft.dpi: 100" >> ~/.Xresources
-    echo "   Added DPI setting to ~/.Xresources"
-fi
+touch ~/.Xresources
+
+update_or_append() {
+    key="$1"
+    value="$2"
+    if grep -q "^$key:" ~/.Xresources; then
+        sed -i "s/^$key:.*/$key: $value/" ~/.Xresources
+        echo "   Updated $key to $value"
+    else
+        echo "$key: $value" >> ~/.Xresources
+        echo "   Added $key: $value"
+    fi
+}
+
+update_or_append "Xft.dpi" "100"
+update_or_append "Xft.antialias" "true"
+update_or_append "Xft.hinting" "true"
+update_or_append "Xft.rgba" "rgb"
+update_or_append "Xft.hintstyle" "hintfull"
 
 # Apply DPI immediately
 xrdb -merge ~/.Xresources

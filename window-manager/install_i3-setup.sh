@@ -26,7 +26,7 @@ safe_copy() {
 # 1. Install required packages
 echo "[+] Installing packages..."
 sudo apt update
-sudo apt install -y i3 i3blocks rofi polybar feh fonts-font-awesome bc acpi lightdm pavucontrol lm-sensors
+sudo apt install -y i3 i3blocks rofi polybar feh fonts-font-awesome bc acpi lightdm pavucontrol lm-sensors lxappearance
 
 # 2. Set up i3 config
 echo "[+] Setting up i3 config..."
@@ -39,6 +39,8 @@ mkdir -p ~/.config/i3blocks
 safe_copy "$SCRIPT_DIR/i3blocks/config" ~/.config/i3blocks/config
 safe_copy "$SCRIPT_DIR/i3blocks/rofi-launch.sh" ~/.config/i3blocks/rofi-launch.sh
 safe_copy "$SCRIPT_DIR/i3blocks/cpu.sh" ~/.config/i3blocks/cpu.sh
+safe_copy "$SCRIPT_DIR/i3blocks/reboot.sh" ~/.config/i3blocks/reboot.sh
+safe_copy "$SCRIPT_DIR/i3blocks/poweroff.sh" ~/.config/i3blocks/poweroff.sh
 
 # 4. Setup polybar
 echo "[+] Setting up polybar"

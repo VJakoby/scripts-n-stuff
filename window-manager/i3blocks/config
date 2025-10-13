@@ -1,4 +1,4 @@
-# i3blocks config file
+# Custom i3blocks config file
 
 [rofi]
 command=~/.config/i3blocks/rofi-launch.sh "🕹️"
@@ -34,3 +34,13 @@ label=🔒 tun0:
 command=date '+%Y-%m-%d %H:%M'
 interval=5
 label=🕒
+
+[reboot]
+command=~/.config/i3blocks/reboot.sh
+interval=once
+signal=1
+
+[poweroff]
+command=~/.config/i3blocks/poweroff.sh
+interval=once
+signal=1

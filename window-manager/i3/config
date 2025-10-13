@@ -3,7 +3,6 @@
 
 # ----------------------------- Setting MOD to Start(Win) button, which is mod 4. ----------------------------- #
 set $mod Mod4
-
 # ----------------------------- i3blocks statusbar, config location in ~/.config/i3blocks/ ----------------------------- #
 bar {
     position bottom
@@ -11,16 +10,21 @@ bar {
     font pango: DejaVu Sans Mono Bold 11
     height 26
     colors {
-#        background #630f8b
-#        statusline #ffffff
-#        separator  #aaaaaa
-#        focused_workspace  #630f8b #630f8b #ffffff
-#        active_workspace   #444444 #630f8b #ffffff
-#        inactive_workspace #222222 #222222 #888888
-#        urgent_workspace   #900000 #630f8b #ffffff
-#        binding_mode       #900000 #630f8b #ffffff
+        background #2c2f30
+        statusline #ffffff
+        separator  #aaaaaa
+        focused_workspace  #4b4f8f #4b4f8f #ffffff
+        active_workspace   #444444 #5a5e9e #ffffff
+        inactive_workspace #2a2a2a #2a2a2a #888888
+        urgent_workspace   #900000 #4b4f8f #ffffff
+        binding_mode       #900000 #4b4f8f #ffffff
     }
 }
+# ---------------- Titlebars, etc colors -------------------- #
+client.focused          #4b4f8f #4b4f8f #ffffff #4b4f8f #4b4f8f
+client.focused_inactive #444444 #2a2a2a #888888 #292d2e #2a2a2a
+client.unfocused        #444444 #2a2a2a #888888 #292d2e #2a2a2a
+client.urgent           #2f343a #900000 #ffffff #900000 #900000
 
 # ----------------------------- Polybar statusbar, config location in ~/.config/polybar/. ----------------------------- #
 # Choose either polybar or i3blocks
@@ -37,13 +41,6 @@ exec_always --no-startup-id feh --bg-scale ~/Pictures/wallpaper.jpg
 # ----------------------------- Rofi launcher
 # config location --> ~/.config/rofi/config.rasi
 bindsym $mod+d exec "rofi -show combi"
-
-# ----------------------------- Setting "dark purple" color for the titlebar
-# class                 border  backgr. text    indicator child_border
-#client.focused          #630f8b #630f8b #d6c4f0 #630f8b   #630f8b
-#client.focused_inactive #444444 #222222 #888888 #292d2e   #222222
-#client.unfocused        #444444 #222222 #888888 #292d2e   #222222
-#client.urgent           #2f343a #900000 #ffffff #900000   #900000
 
 # ----------------------------- Setting up scratchpad
 bindsym $mod+minus scratchpad show

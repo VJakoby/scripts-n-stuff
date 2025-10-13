@@ -1,5 +1,6 @@
 
 configuration {
+  font: DejaVu Sans Mono Bold 12";
   modi: "combi";
   combi-modi: "drun,window";
   show-icons: true;

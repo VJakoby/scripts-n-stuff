@@ -50,7 +50,36 @@ echo "[+] Setting up rofi config"
 mkdir -p ~/.config/rofi
 safe_copy "$SCRIPT_DIR/rofi/config.rasi" ~/.config/rofi/config.rasi
 
-# 6. Setup LightDM (optional but recommended)
+# 6. Set DPI for X11 (Defaul value is 96, Setting to 98)
+echo "[+] Setting DPI to 100 via ~/.Xresources..."
+
+# Create or update ~/.Xresources safely
+if grep -q "^Xft.dpi:" ~/.Xresources 2>/dev/null; then
+    sed -i 's/^Xft.dpi:.*/Xft.dpi: 100/' ~/.Xresources
+    echo "   Updated existing DPI setting in ~/.Xresources"
+else
+    echo "Xft.dpi: 100" >> ~/.Xresources
+    echo "   Added DPI setting to ~/.Xresources"
+fi
+
+# Apply DPI immediately
+xrdb -merge ~/.Xresources
+
+# Ensure DPI is applied on login
+if [ ! -f ~/.xsession ]; then
+    echo "[+] Creating ~/.xsession to apply DPI on login..."
+    echo "xrdb -merge ~/.Xresources" > ~/.xsession
+    chmod +x ~/.xsession
+else
+    if ! grep -q "xrdb -merge ~/.Xresources" ~/.xsession; then
+        echo "xrdb -merge ~/.Xresources" >> ~/.xsession
+        echo "   Added DPI merge command to ~/.xsession"
+    else
+        echo "   ~/.xsession already includes DPI merge command"
+    fi
+fi
+
+# 7. Setup LightDM (optional but recommended)
 echo "[+] Ensuring lightdm is set as display manager..."
 if dpkg -l | grep -q lightdm; then
     sudo debconf-set-selections <<< "lightdm shared/default-x-display-manager select lightdm"
@@ -59,6 +88,6 @@ else
     echo "   ⚠️  Warning: lightdm not installed correctly."
 fi
 
-# 7. Done
+# 8. Done
 echo -e "\n✅ Everything completed!"
 echo "Reboot and at the login screen, choose i3 session (bottom-right gear icon if available)."

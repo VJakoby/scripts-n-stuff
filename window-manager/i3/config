@@ -8,18 +8,17 @@ set $mod Mod4
 bar {
     position bottom
     status_command i3blocks
-    font pango: Cantarell Bold 11
-#    font pango: DejaVu Sans Mono Bold 11
+    font pango: DejaVu Sans Mono Bold 11
     height 26
     colors {
-        background #630f8b
-        statusline #ffffff
-        separator  #aaaaaa
-        focused_workspace  #630f8b #630f8b #ffffff
-        active_workspace   #444444 #630f8b #ffffff
-        inactive_workspace #222222 #222222 #888888
-        urgent_workspace   #900000 #630f8b #ffffff
-        binding_mode       #900000 #630f8b #ffffff
+#        background #630f8b
+#        statusline #ffffff
+#        separator  #aaaaaa
+#        focused_workspace  #630f8b #630f8b #ffffff
+#        active_workspace   #444444 #630f8b #ffffff
+#        inactive_workspace #222222 #222222 #888888
+#        urgent_workspace   #900000 #630f8b #ffffff
+#        binding_mode       #900000 #630f8b #ffffff
     }
 }
 
@@ -41,10 +40,10 @@ bindsym $mod+d exec "rofi -show combi"
 
 # ----------------------------- Setting "dark purple" color for the titlebar
 # class                 border  backgr. text    indicator child_border
-client.focused          #630f8b #630f8b #d6c4f0 #630f8b   #630f8b
-client.focused_inactive #444444 #222222 #888888 #292d2e   #222222
-client.unfocused        #444444 #222222 #888888 #292d2e   #222222
-client.urgent           #2f343a #900000 #ffffff #900000   #900000
+#client.focused          #630f8b #630f8b #d6c4f0 #630f8b   #630f8b
+#client.focused_inactive #444444 #222222 #888888 #292d2e   #222222
+#client.unfocused        #444444 #222222 #888888 #292d2e   #222222
+#client.urgent           #2f343a #900000 #ffffff #900000   #900000
 
 # ----------------------------- Setting up scratchpad
 bindsym $mod+minus scratchpad show
@@ -217,14 +216,11 @@ bindsym $mod+r mode "resize"
 # Firefox
 bindsym $mod+Shift+f exec firefox
 
-# Chromium
-bindsym $mod+Shift+f exec chromium
-
 # Burpsuite
-bindsym $mod+Shift+f exec burpsuite
+bindsym $mod+Shift+c exec burpsuite
 
 # Zaproxy
-bindsym $mod+Shift+f exec zaproxy
+bindsym $mod+Shift+z exec zaproxy
 
 # Terminal
 bindsym $mod+Return exec qterminal

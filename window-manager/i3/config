@@ -7,7 +7,7 @@ set $mod Mod4
 
 # ------- i3blocks statusbar, config location in ~/.config/i3blocks/
 bar {
-    position top
+    position bottom
     status_command i3blocks
     font pango: Cantarell Bold 11
     height 26
@@ -26,17 +26,14 @@ bar {
 
 # ------- Polybar statusbar, config location in ~/.config/polybar/.
 # Choose either polybar or i3blocks
-
 # Kill any existing polybar instances
-exec --no-startup-id killall -q polybar
-
+# exec --no-startup-id killall -q polybar
 # Launch your polybar config
-exec_always --no-startup-id polybar main
+# exec_always --no-startup-id polybar main
 
 # ------- Wallpaper: Setting a wallpaper, put in /Pictures/wallpaper.jpg
 # wget https://www.kali.org/wallpapers/images/YEAR/kali-NAME.jpg
 # cp kali-NAME.jpg ~/Pictures/wallpaper.jpg
-
 exec_always --no-startup-id feh --bg-scale ~/Pictures/wallpaper.jpg
 
 # ------- Rofi launcher
@@ -56,7 +53,6 @@ bindsym $mod+Shift+minus move scratchpad
 
 ## ----------------------------------------------------------------------------------------------------- ##
 
-
 # This font is widely installed, provides lots of unicode glyphs, right-to-left
 # text rendering and scalability on retina/hidpi displays (thanks to pango).
 font pango: Cantarell Bold 11
@@ -68,12 +64,12 @@ exec --no-startup-id setxkbmap se
 
 exec --no-startup-id dex --autostart --environment i3
 
+# ------------- XSS Lock
 # The combination of xss-lock, nm-applet and pactl is a popular choice, so
 # they are included here as an example. Modify as you see fit.
-
 # xss-lock grabs a logind suspend inhibit lock and will use i3lock to lock the
 # screen before suspend. Use loginctl lock-session to lock your screen.
-exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
+# exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
 
 # NetworkManager is the most popular way to manage wireless networks on Linux,
 # and nm-applet is a desktop environment-independent system tray GUI for it.

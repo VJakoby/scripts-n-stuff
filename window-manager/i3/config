@@ -1,11 +1,10 @@
-# i3 config file (v4)
+## -------------------------------------- Custom i3 config file ---------------------------------------------- ##
 # Please see https://i3wm.org/docs/userguide.html for a complete reference!
 
-## -------------------------------------- Custom config ---------------------------------------------- ##
-# ------- Setting MOD to Start(Win) button, which is mod 4.
+# ----------------------------- Setting MOD to Start(Win) button, which is mod 4. ----------------------------- #
 set $mod Mod4
 
-# ------- i3blocks statusbar, config location in ~/.config/i3blocks/
+# ----------------------------- i3blocks statusbar, config location in ~/.config/i3blocks/ ----------------------------- #
 bar {
     position bottom
     status_command i3blocks
@@ -13,7 +12,7 @@ bar {
 #    font pango: DejaVu Sans Mono Bold 11
     height 26
     colors {
-#       background #630f8b
+        background #630f8b
         statusline #ffffff
         separator  #aaaaaa
         focused_workspace  #630f8b #630f8b #ffffff
@@ -24,30 +23,30 @@ bar {
     }
 }
 
-# ------- Polybar statusbar, config location in ~/.config/polybar/.
+# ----------------------------- Polybar statusbar, config location in ~/.config/polybar/. ----------------------------- #
 # Choose either polybar or i3blocks
 # Kill any existing polybar instances
 # exec --no-startup-id killall -q polybar
 # Launch your polybar config
 # exec_always --no-startup-id polybar main
 
-# ------- Wallpaper: Setting a wallpaper, put in /Pictures/wallpaper.jpg
+# ----------------------------- Wallpaper: Setting a wallpaper, put in /Pictures/wallpaper.jpg ----------------------------- #
 # wget https://www.kali.org/wallpapers/images/YEAR/kali-NAME.jpg
 # cp kali-NAME.jpg ~/Pictures/wallpaper.jpg
 exec_always --no-startup-id feh --bg-scale ~/Pictures/wallpaper.jpg
 
-# ------- Rofi launcher
+# ----------------------------- Rofi launcher
 # config location --> ~/.config/rofi/config.rasi
 bindsym $mod+d exec "rofi -show combi"
 
-# ------- Setting "dark purple" color for the titlebar
+# ----------------------------- Setting "dark purple" color for the titlebar
 # class                 border  backgr. text    indicator child_border
 client.focused          #630f8b #630f8b #d6c4f0 #630f8b   #630f8b
 client.focused_inactive #444444 #222222 #888888 #292d2e   #222222
 client.unfocused        #444444 #222222 #888888 #292d2e   #222222
 client.urgent           #2f343a #900000 #ffffff #900000   #900000
 
-# ------- Setting up scratchpad
+# ----------------------------- Setting up scratchpad
 bindsym $mod+minus scratchpad show
 bindsym $mod+Shift+minus move scratchpad
 
@@ -65,7 +64,7 @@ exec --no-startup-id setxkbmap se
 
 exec --no-startup-id dex --autostart --environment i3
 
-# ------------- XSS Lock
+# ----------------------------- XSS Lock
 # The combination of xss-lock, nm-applet and pactl is a popular choice, so
 # they are included here as an example. Modify as you see fit.
 # xss-lock grabs a logind suspend inhibit lock and will use i3lock to lock the
@@ -89,9 +88,6 @@ floating_modifier $mod
 # move tiling windows via drag & drop by left-clicking into the title bar,
 # or left-clicking anywhere into the window while holding the floating modifier.
 tiling_drag modifier titlebar
-
-# start a terminal
-bindsym $mod+Return exec terminator
 
 # kill focused window
 bindsym $mod+Shift+q kill
@@ -216,3 +212,19 @@ mode "resize" {
 }
 
 bindsym $mod+r mode "resize"
+
+# ----------------------------- Application quick start ----------------------------- #
+# Firefox
+bindsym $mod+Shift+f exec firefox
+
+# Chromium
+bindsym $mod+Shift+f exec chromium
+
+# Burpsuite
+bindsym $mod+Shift+f exec burpsuite
+
+# Zaproxy
+bindsym $mod+Shift+f exec zaproxy
+
+# Terminal
+bindsym $mod+Return exec qterminal

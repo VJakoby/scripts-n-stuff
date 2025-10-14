@@ -21,9 +21,11 @@ bar {
     }
 }
 # ---------------- Titlebars, etc colors -------------------- #
-client.focused          #4b4f8f #4b4f8f #ffffff #4b4f8f #4b4f8f
-client.focused_inactive #444444 #2a2a2a #888888 #292d2e #2a2a2a
-client.unfocused        #444444 #2a2a2a #888888 #292d2e #2a2a2a
+# Current color is "purple"
+# ---------------------|border |background |text  |indicator |child_border
+client.focused          #5b5fd8 #5b5fd8 #ffffff #5b5fd8 #5b5fd8
+client.focused_inactive #3c3c3c #2a2a2a #aaaaaa #292d2e #2a2a2a
+client.unfocused        #3a3a3a #2a2a2a #888888 #292d2e #2a2a2a
 client.urgent           #2f343a #900000 #ffffff #900000 #900000
 
 # ----------------------------- Polybar statusbar, config location in ~/.config/polybar/. ----------------------------- #

@@ -2,6 +2,15 @@
 # Requirements:
 # sudo apt install httprobe eyewitness assetfinder subjack waybackurls
 
+# Description:
+# 1. Creates a structured directory for storing recon data per domain.
+# 2. Finds subdomains using assetfinder.
+# 3. Checks which subdomains are alive using httprobe.
+# 4. Detects potential subdomain takeovers using subjack.
+# 5. Scans alive hosts for open ports using nmap.
+# 6. Scrapes historical URLs from the Wayback Machine using waybackurls.
+# 7. Extracts parameters and file types (e.g., .js, .php, .json) from Wayback data for further analysis.
+# ------------------------------------------------------------------------------------------------------
 # Usage: ./enumeration-recon.sh <domain|domains.txt>
 set -u
 

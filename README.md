@@ -17,4 +17,4 @@
 ```
 **Window-manager**
 - Contains i3, i3blocks and rofi installation script and config files
-- Just run `install_i3-setup.sh`
+- Just run `install_i3-setup.sh`, will install i3 and other dependencies, copying the predefined config files. 

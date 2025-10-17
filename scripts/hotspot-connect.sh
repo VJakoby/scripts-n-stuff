@@ -2,7 +2,7 @@
 
 # Check if two arguments are provided
 if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <WIFI-NETWORK> <PASSWORD>"
+    echo "Usage: $0 <SSID> <PASSWORD>"
     exit 1
 fi
 

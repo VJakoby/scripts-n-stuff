@@ -2,12 +2,21 @@ import sys
 import subprocess
 import re
 
-# ------- NMAP performance adjustments -------
-# -T4 = (Use timing for good balance between speed and accuracy)
-# --min-parallelism 10 --max-parallelism 100 = (Increate number of parallel probes sent)
-# -n = (Skip DNS resolution)
-# Combine all options for faster scanning
-# --------------------------------------------
+# Usage:
+#   python script.py <target_network>
+# Examples:
+#   python script.py 192.168.1.0/24      # scan a whole subnet in CIDR-format
+#   python script.py 10.0.0.5/32         # scan a single IP (CIDR /32)
+#
+# Output:
+#   <target_network>.txt                # list with IP-addresses (sorted numerical)
+#   nmap-output-<target_network>.txt    # raw data from nmap
+# --------------- NMAP performance adjustments -------------------
+# * -T4 = (Use timing for good balance between speed and accuracy)
+# * --min-parallelism 10 --max-parallelism 100 = (Increate number of parallel probes sent)
+# * -n = (Skip DNS resolution)
+# * Combine all options for faster scanning
+# ----------------------------------------------------------------
 
 def run_nmap_scan(target_network):
     # Run the Nmap discovery scan

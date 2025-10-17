@@ -6,14 +6,14 @@
 **Scripts**
 - Contains custom scripts like:
 ```
-- check-dns-posts.sh
-- check-ssl-cert.sh
-- enumeration-recon.sh
-- hotspot-connect.sh
-- nmap-discovery.py
-- nmap-discovery-sh
-- toggle-vm-resolution.sh
-- wifi-dump.sh
+- check-dns-posts.sh         # Returns SPF, DMARC posts of a given domain, also DKIM of <selector> is provided
+- check-ssl-cert.sh          # Returns SSL certificates on several domains from a txt file
+- enumeration-recon.sh       # Automates domain reconnaissance by discovering subdomains, checking their availability, scanning for vulnerabilities, and extracting historical data and parameters for further analysis.
+- hotspot-connect.sh         # Quick connect to a wifi hotspot from argument usage <SSID> <PASSWORD>
+- nmap-discovery.py          # Nmap wrapper for scanning either single IP or several IPs from txt file. Written in python
+- nmap-discovery-sh          # Nmap wrapper for scanning either single IP or several IPs from txt file: Written in bash
+- toggle-vm-resolution.sh    # Toggle between two custom defined resolutions. Probably most suitable for laptop screen usage.
+- wifi-dump.sh               # Quick script for enabling monitor-mode on wifi dongle, and dumping wifi traffic
 ```
 **Window-manager**
 - Contains i3, i3blocks and rofi installation script and config files

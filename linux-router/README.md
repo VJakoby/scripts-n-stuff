@@ -12,8 +12,9 @@ It handles NAT, IP forwarding, LAN DNS via `dnsmasq`, and dynamic WAN detection.
 - **This IP must be configured manually** on the LAN interface (for example, via netplan or nmcli).
 - VMs use this IP as **gateway** and **DNS**
 #### Setting IP
-1. Change the `01-netcfg.yaml` if IP or interface is not correct.
-2. `sudo netplan apply`
+1. Change the `01-netcfg.yaml` to your choice.
+2. Move the pre-config file
+3. `sudo netplan apply`
 ### WAN (dynamic)
 - Detected automatically — any interface with the default route becomes WAN..
 - Can be NAT, bridged, or any other connection providing Internet access.

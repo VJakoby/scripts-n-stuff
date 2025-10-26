@@ -1,5 +1,5 @@
 #!/bin/bash
-# dynamic-router.sh — Dynamic WAN + static LAN router for VMs with persistence
+# dynamic-router.sh — Dynamic WAN + static LAN router for VMs
 # Usage: ./dynamic-router.sh <LAN_IFACE> <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>
 
 set -e
@@ -89,7 +89,7 @@ if command -v dnsmasq &> /dev/null; then
     sudo systemctl stop dnsmasq || true
     sudo tee /etc/dnsmasq.d/lan.conf > /dev/null <<EOF
 interface=$LAN_IFACE
-listen-address=${LAN_IP_CIDR%/*}  # strip CIDR for dnsmasq
+listen-address=${LAN_IP_CIDR%/*}
 bind-interfaces
 server=$PRIMARY_DNS
 server=$SECONDARY_DNS
@@ -104,3 +104,25 @@ sudo mkdir -p /etc/iptables
 sudo iptables-save | sudo tee /etc/iptables/rules.v4 > /dev/null
 
 echo "[INFO] Router setup complete. LAN=${LAN_IP_CIDR%/*} via $LAN_IFACE, WAN=$WAN_IFACE"
+
+# === Optional: WAN watcher loop ===
+CURRENT_WAN=$WAN_IFACE
+while true; do
+    NEW_WAN=$(ip route | awk '/^default/ {print $5; exit}')
+    if [ "$NEW_WAN" != "$CURRENT_WAN" ]; then
+        echo "[INFO] WAN interface changed: $CURRENT_WAN -> $NEW_WAN"
+        # Remove old NAT & forwarding
+        sudo iptables -t nat -D POSTROUTING -o $CURRENT_WAN -j MASQUERADE
+        sudo iptables -D FORWARD -i $LAN_IFACE -o $CURRENT_WAN -j ACCEPT
+        sudo iptables -D FORWARD -i $CURRENT_WAN -o $LAN_IFACE -m state --state ESTABLISHED,RELATED -j ACCEPT
+        sudo iptables -D OUTPUT -o $CURRENT_WAN -j ACCEPT
+        # Apply rules for new WAN
+        sudo iptables -t nat -A POSTROUTING -o $NEW_WAN -j MASQUERADE
+        sudo iptables -A FORWARD -i $LAN_IFACE -o $NEW_WAN -j ACCEPT
+        sudo iptables -A FORWARD -i $NEW_WAN -o $LAN_IFACE -m state --state ESTABLISHED,RELATED -j ACCEPT
+        sudo iptables -A OUTPUT -o $NEW_WAN -j ACCEPT
+        CURRENT_WAN=$NEW_WAN
+        echo "[INFO] WAN rules updated for $NEW_WAN"
+    fi
+    sleep 10
+done

@@ -1,14 +1,6 @@
 # Dynamic VM Router
 A lightweight Linux VM setup that functions as a dynamic router for other VMs.
 It handles NAT, IP forwarding, LAN DNS via dnsmasq, and automatic WAN detection, making it easy to spin up a private VM network with internet access.
-
-## Recommended Linux Distribution
-- **Best suited:** Ubuntu LTS (Desktop or Server) or Xubuntu.
-  - Network configuration is tai# Dynamic VM Router
-
-A lightweight Linux VM setup that functions as a dynamic router for other VMs.
-It handles NAT, IP forwarding, LAN DNS via `dnsmasq`, and automatic WAN detection, making it easy to spin up a private VM network with internet access.
-
 ## Recommended Linux Distribution
 
 * **Best suited:** Ubuntu LTS (Desktop or Server) or Xubuntu

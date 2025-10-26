@@ -48,17 +48,12 @@ sudo iptables -t nat -A POSTROUTING -o $WAN_IFACE -j MASQUERADE
 
 # === dnsmasq for LAN DNS only ===
 if command -v dnsmasq &> /dev/null; then
-    echo "[INFO] Configuring dnsmasq for LAN DNS..."
+    echo "[INFO] Ensuring dnsmasq is running for LAN DNS..."
+    
+    # Stop any running instance first
     sudo systemctl stop dnsmasq || true
-    sudo tee /etc/dnsmasq.d/lan.conf > /dev/null <<EOF
-interface=$LAN_IFACE
-listen-address=$LAN_IP
-bind-interfaces
-server=8.8.8.8
-server=1.1.1.1
-domain-needed
-bogus-priv
-EOF
+    
+    # Restart dnsmasq (assumes lan.conf is already in /etc/dnsmasq.d/)
     sudo systemctl restart dnsmasq
 fi
 

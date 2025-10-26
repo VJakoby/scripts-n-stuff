@@ -1,12 +1,19 @@
 #!/bin/bash
-# dynamic-router.sh — Dynamic WAN + static LAN router for VMs
-# Usage: ./dynamic-router.sh <LAN_IFACE> <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>
+
+# dynamic-router.sh — Hybrid Dynamic WAN + static LAN router for VMs with optional systemd service installation
+# Usage: ./dynamic-router.sh [--install-service] <LAN_IFACE> <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>
 
 set -e
 
 # === Script arguments ===
+INSTALL_SERVICE=false
+if [ "$1" == "--install-service" ]; then
+    INSTALL_SERVICE=true
+    shift
+fi
+
 if [ $# -ne 4 ]; then
-    echo "Usage: $0 <LAN_IFACE> <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>"
+    echo "Usage: $0 [--install-service] <LAN_IFACE> <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>"
     exit 1
 fi
 
@@ -16,7 +23,7 @@ PRIMARY_DNS="$3"
 SECONDARY_DNS="$4"
 
 # === Ensure required packages are installed ===
-REQUIRED_PKGS=(dnsmasq iptables iptables-persistent curl)
+REQUIRED_PKGS=(dnsmasq iptables iptables-persistent curl netplan.io)
 for pkg in "${REQUIRED_PKGS[@]}"; do
     if ! dpkg -s "$pkg" &> /dev/null; then
         echo "[INFO] Installing missing package: $pkg"
@@ -24,6 +31,34 @@ for pkg in "${REQUIRED_PKGS[@]}"; do
         sudo apt-get install -y "$pkg"
     fi
 done
+
+# === Optional: Install as systemd service ===
+if [ "$INSTALL_SERVICE" = true ]; then
+    echo "[INFO] Installing script as systemd service..."
+    sudo cp "$0" /usr/local/bin/dynamic-router.sh
+    sudo chmod +x /usr/local/bin/dynamic-router.sh
+
+    sudo tee /etc/systemd/system/dynamic-router.service > /dev/null <<EOF
+[Unit]
+Description=Hybrid Dynamic VM Router
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/dynamic-router.sh $LAN_IFACE $LAN_IP_CIDR $PRIMARY_DNS $SECONDARY_DNS
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable dynamic-router.service
+    sudo systemctl start dynamic-router.service
+    echo "[INFO] Service installed and started."
+    exit 0
+fi
 
 # === Detect WAN dynamically ===
 WAN_IFACE=$(ip route | awk '/^default/ {print $5; exit}')
@@ -36,7 +71,7 @@ echo "[INFO] Detected WAN interface: $WAN_IFACE"
 # === Enable IP forwarding ===
 sudo sysctl -w net.ipv4.ip_forward=1
 
-# === Flush existing iptables rules ===
+# === Flush iptables rules ===
 sudo iptables -F
 sudo iptables -t nat -F
 sudo iptables -t mangle -F
@@ -64,7 +99,7 @@ sudo iptables -A FORWARD -i $WAN_IFACE -o $LAN_IFACE -m state --state ESTABLISHE
 # === NAT ===
 sudo iptables -t nat -A POSTROUTING -o $WAN_IFACE -j MASQUERADE
 
-# === Netplan config for LAN interface + upstream DNS ===
+# === Netplan config ===
 sudo tee /etc/netplan/99-dynamic-router.yaml > /dev/null <<EOF
 network:
   version: 2
@@ -83,7 +118,7 @@ EOF
 
 sudo netplan apply
 
-# === dnsmasq for LAN DNS only ===
+# === dnsmasq for LAN DNS ===
 if command -v dnsmasq &> /dev/null; then
     echo "[INFO] Configuring dnsmasq for LAN DNS..."
     sudo systemctl stop dnsmasq || true
@@ -105,18 +140,16 @@ sudo iptables-save | sudo tee /etc/iptables/rules.v4 > /dev/null
 
 echo "[INFO] Router setup complete. LAN=${LAN_IP_CIDR%/*} via $LAN_IFACE, WAN=$WAN_IFACE"
 
-# === Optional: WAN watcher loop ===
+# === WAN watcher loop ===
 CURRENT_WAN=$WAN_IFACE
 while true; do
     NEW_WAN=$(ip route | awk '/^default/ {print $5; exit}')
     if [ "$NEW_WAN" != "$CURRENT_WAN" ]; then
         echo "[INFO] WAN interface changed: $CURRENT_WAN -> $NEW_WAN"
-        # Remove old NAT & forwarding
         sudo iptables -t nat -D POSTROUTING -o $CURRENT_WAN -j MASQUERADE
         sudo iptables -D FORWARD -i $LAN_IFACE -o $CURRENT_WAN -j ACCEPT
         sudo iptables -D FORWARD -i $CURRENT_WAN -o $LAN_IFACE -m state --state ESTABLISHED,RELATED -j ACCEPT
         sudo iptables -D OUTPUT -o $CURRENT_WAN -j ACCEPT
-        # Apply rules for new WAN
         sudo iptables -t nat -A POSTROUTING -o $NEW_WAN -j MASQUERADE
         sudo iptables -A FORWARD -i $LAN_IFACE -o $NEW_WAN -j ACCEPT
         sudo iptables -A FORWARD -i $NEW_WAN -o $LAN_IFACE -m state --state ESTABLISHED,RELATED -j ACCEPT

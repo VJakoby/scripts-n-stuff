@@ -1,6 +1,6 @@
 #!/bin/bash
 # dynamic-router.sh — Dynamic WAN + static LAN router for VMs with persistence
-# Usage: ./dynamic-router.sh <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>
+# Usage: ./dynamic-router.sh <LAN_IFACE> <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>
 
 set -e
 

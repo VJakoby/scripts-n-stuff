@@ -1,8 +1,8 @@
 # Pre-configured netconfig file
-Should be placed under /etc/netplan/ (if you have Ubuntu)
+# Should be placed under /etc/netplan/ (if you have Ubuntu)
 # ens34 = Interface for the internal LAN
 # 192.168.100.1/24 = IP for the internal LAN.
-Optional interfaces can also be added.
+# Optional interfaces can also be added.
 # ------------------------------------------------------------------
 network:
   version: 2

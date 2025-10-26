@@ -8,7 +8,12 @@ It handles NAT, IP forwarding, LAN DNS via dnsmasq, and automatic WAN detection,
 - **Other compatible options**: Debian-based distributions (like Debian,, Linux Mint)
 ## Usage
 ```bash
+# 1) Test the  script 
 ./dynamic-router.sh <LAN_IFACE> <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>
+# 2) Edit file install-dynamic-router-service.sh
+<LAN_IFACE> <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>
+# 3. Run the script
+./install-dynamic-router-service.sh
 ```
 - `<LAN_IFACE>` — the network interface for the LAN (e.g., ens34, enp0s8, or any VM network adapter connected to your private VM network)
 - `<LAN_IP/CIDR>` — static IP for your LAN interface (e.g., 192.168.100.1/24)

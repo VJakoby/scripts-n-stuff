@@ -4,16 +4,6 @@
 
 set -e
 
-# === Ensure required packages are installed ===
-REQUIRED_PKGS=(dnsmasq iptables iptables-persistent curl)
-for pkg in "${REQUIRED_PKGS[@]}"; do
-    if ! dpkg -s "$pkg" &> /dev/null; then
-        echo "[INFO] Installing missing package: $pkg"
-        sudo apt-get update
-        sudo apt-get install -y "$pkg"
-    fi
-done
-
 # === Script arguments ===
 if [ $# -ne 4 ]; then
     echo "Usage: $0 <LAN_IFACE> <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>"
@@ -24,6 +14,16 @@ LAN_IFACE="$1"
 LAN_IP_CIDR="$2"
 PRIMARY_DNS="$3"
 SECONDARY_DNS="$4"
+
+# === Ensure required packages are installed ===
+REQUIRED_PKGS=(dnsmasq iptables iptables-persistent curl)
+for pkg in "${REQUIRED_PKGS[@]}"; do
+    if ! dpkg -s "$pkg" &> /dev/null; then
+        echo "[INFO] Installing missing package: $pkg"
+        sudo apt-get update
+        sudo apt-get install -y "$pkg"
+    fi
+done
 
 # === Detect WAN dynamically ===
 WAN_IFACE=$(ip route | awk '/^default/ {print $5; exit}')

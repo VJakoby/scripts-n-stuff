@@ -1,51 +1,50 @@
 # Dynamic VM Router
-This setup provides a lightweight Linux VM acting as a dynamic router for other VMs.  
-It handles NAT, IP forwarding, LAN DNS via `dnsmasq`, and dynamic WAN detection.
+A lightweight Linux VM setup that functions as a dynamic router for other VMs.
+It handles NAT, IP forwarding, LAN DNS via dnsmasq, and automatic WAN detection, making it easy to spin up a private VM network with internet access.
 
-## Requirements:
-`dnsmasq iptables iptables-persistent`
-
+## Recommended Linux Distribution
+- **Best suited:** Ubuntu LTS (Desktop or Server) or Xubuntu.
+  - Network configuration is tailored for Ubuntu based.
+- **Other compatible options**: Debian-based distributions (like Debian,, Linux Mint)
+## Usage
+```bash
+./dynamic-router.sh <LAN_IFACE> <LAN_IP/CIDR> <PRIMARY_DNS> <SECONDARY_DNS>
+```
+- `<LAN_IFACE>` — the network interface for the LAN (e.g., ens34, enp0s8, or any VM network adapter connected to your private VM network)
+- `<LAN_IP/CIDR>` — static IP for your LAN interface (e.g., 192.168.100.1/24)
+- `<PRIMARY_DNS>` — upstream DNS server for LAN clients (e.g., 8.8.8.8)
+- `<SECONDARY_DNS>` — secondary upstream DNS server (e.g., 1.1.1.1)
 ## Network Interfaces
 ### LAN (static)
-- Interface: e.g, `ens34` (in this setup it's connected to VMwares `VMnet2`
-- IP: `192.168.100.1/24`
-- **This IP must be configured manually** on the LAN interface (for example, via netplan or nmcli).
-- VMs use this IP as **gateway** and **DNS**
+- Interface: e.g, `ens34` (amy interface connected to your VM network)
+- IP: e.g., `192.168.100.1/24`
+- LAN ip is **static** and must be assigned before starting the router.
+- LAN clients use this IPas **gateway** and **DNS**
 #### Setting IP
-1. Change the `01-netcfg.yaml` to your choice.
-2. Move the pre-config file
-3. `sudo netplan apply`
+Update your netplan or network configuration with the chosen IP and apply it:
+`sudo netplan apply`
+
 ### WAN (dynamic)
-- Detected automatically — any interface with the default route becomes WAN..
-- Can be NAT, bridged, or any other connection providing Internet access.
-- The script automatically updates routing and NAT if the WAN changes.
+- Detected automatically — any interface with a default route becomes WAN.
+- Supports NAT, bridged, or any upstream connection providing Internet access.
+- Script automatically updates routing and NAT if the WAN changes.
 
-## How this works
-1. WAN detection is dynamic — any interface that has the default route becomes WAN.
-2. LAN interface is static — your VMs always use 192.168.100.1 as gateway and DNS.
-3. Router VM itself can access the internet (apt, updates, DNS).
-4. Forwarding and NAT allow LAN → WAN traffic automatically.
-5. `dnsmasq` binds to LAN interface only, providing DNS for the VMs. (No DHCP). Clients must be manually set also within the same subnet.
-
-## Setup
-```
-sudo apt update
-sudo apt install iptables iptables-persistent dnsmasq -y
-sudo mv dynamic-router.sh /usr/local/bin/dynamic-router.sh
-sudo chmod +x /usr/local/bin/dynamic-router.sh
-sudo mv dynamic-router.service /etc/systemd/system/dynamic-router.service
-sudo systemctl daemon-reload
-sudo systemctl enable dynamic-router.service
-sudo systemctl start dynamic-router.service
-```
+## How it works
+1. **WAN detection** is dynamic — the router always identifies which interface has internet access.
+2. **LAN is static** — VMs use the router’s LAN IP as gateway and DNS.
+3. The **router VM itself can access the internet**, including for updates and DNS.
+4. **Forwarding and NAT** allow LAN → WAN traffic automatically.
+5. **dnsmasq** binds only to the LAN interface, providing DNS for VMs. (No DHCP — clients must be configured manually.)
 - Inspect the logs too see if it works `journalctl -u dynamic-router.service -f`
 
 ## Notes
-- The LAN IP (192.168.100.1/24) must be manually assigned before starting the service.
-- The router VM itself maintains internet connectivity.
-- dnsmasq runs only on the LAN interface and provides DNS (no DHCP).
-- If the LAN interface isn’t active at boot, dnsmasq may fail — consider adding a readiness check in the script.
-- WAN interface detection adapts automatically, including after VPN changes.
-- 
-### Future TODO
-- [] Ensure that Internet access works when router has a active VPN connection enabled.
+- LAN IP must be assigned **before** starting the script.
+- The router maintains its own internet connectivity independently of the LAN.
+- `dnsmasq` runs only on the LAN interface and provides DNS (no DHCP).
+- If the LAN interface isn’t active at boot, dnsmasq may fail — consider adding readiness checks in the script.
+
+WAN interface detection adapts automatically, including after VPN changes.
+## Future TODO
+- [] Ensure internet access works when the router VM has an active VPN connection.
+- [] Optional: Add DHCP support for LAN clients.
+- [] Optional: Add logging or monitoring of WAN interface changes.

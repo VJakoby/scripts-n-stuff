@@ -8,7 +8,13 @@ network:
   version: 2
   renderer: NetworkManager
   ethernets:
-    ens34:
+    ens33:        # WAN interface
+      dhcp4: yes
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 1.1.1.1
+    ens34:        # LAN interface
       dhcp4: no
       addresses:
         - 192.168.100.1/24

@@ -195,6 +195,7 @@ echo "[INFO] Configuring dnsmasq for LAN DNS..."
 sudo systemctl stop dnsmasq 2>/dev/null || true
 
 sudo tee /etc/dnsmasq.d/lan.conf > /dev/null <<EOF
+sudo tee /etc/dnsmasq.d/lan.conf > /dev/null <<EOF
 # Bind only to LAN interface
 interface=$LAN_IFACE
 listen-address=$LAN_IP
@@ -213,6 +214,17 @@ bogus-priv
 
 # Cache settings
 cache-size=1000
+
+# DHCP configuration
+# Automatically serve DHCP in the same subnet as the router
+# Example: if router is 192.168.100.1/24 → range is 192.168.100.50–192.168.100.150
+dhcp-range=${LAN_IP%.*}.50,${LAN_IP%.*}.150,12h
+
+# Gateway and DNS offered to clients
+dhcp-option=3,$LAN_IP      # Default gateway
+dhcp-option=6,$LAN_IP      # DNS server
+
+# Allow static IPs outside the DHCP range without interference
 EOF
 
 # Disable default dnsmasq config that might conflict

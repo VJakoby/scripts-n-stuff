@@ -35,7 +35,7 @@ That's it! The router will start immediately and automatically on every boot.
 **DNS servers are hardcoded:**
 - Primary: 1.1.1.1 (Cloudflare)
 - Secondary: 8.8.8.8 (Google)
-
+---
 ## Network Interfaces
 
 ### LAN (static)
@@ -66,7 +66,7 @@ After the router is running, configure your LAN VMs with static IPs:
 - IP Address: `192.168.100.10/24` (any IP in the same subnet)
 - Gateway: `192.168.100.1` (the router's LAN IP)
 - DNS Server: `192.168.100.1` (the router's LAN IP)
-
+---
 ## Management Commands
 
 ### Check Service Status
@@ -93,13 +93,7 @@ sudo systemctl stop dynamic-router.service
 ```bash
 sudo systemctl disable dynamic-router.service
 ```
-
-### Manual Testing (Without Installing Service)
-If you want to test the router without installing the systemd service:
-```bash
-sudo ./dynamic-router.sh --run <LAN_IFACE> <LAN_IP/CIDR>
-```
-
+---
 ## Uninstallation
 
 To completely remove the router service:
@@ -128,7 +122,7 @@ sudo systemctl restart systemd-resolved
 - ✅ **Router internet access** — the router VM maintains its own connectivity
 - ✅ **Automatic WAN failover** — adapts if your internet connection changes
 - ✅ **Persistent configuration** — survives reboots
-
+---
 ## Troubleshooting
 
 ### Check if the service is running
@@ -170,9 +164,8 @@ ping google.com     # Should resolve and reach internet
 **Router can't access internet:**
 - Check WAN interface has connectivity: `ip route`
 - Test DNS resolution: `nslookup google.com 1.1.1.1`
-
+---
 ## Notes
-
 - The router maintains its own internet connectivity independently of the LAN
 - `dnsmasq` runs only on the LAN interface and provides DNS (no DHCP)
 - WAN interface detection adapts automatically, including after VPN changes
@@ -182,4 +175,4 @@ ping google.com     # Should resolve and reach internet
 ## Future TODO
 - [ ] Add DHCP support for LAN clients (optional)
 - [ ] Add logging or monitoring of WAN interface changes
-- [ ] Add web UI for configuration and monitoring
+- [ ] Add terminal UI for configuration and monitoring

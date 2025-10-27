@@ -4,12 +4,11 @@
 #        ./dynamic-router.sh --run <LAN_IFACE> <LAN_IP/CIDR>
 
 set -e
-
-# Hardcoded DNS servers
-# Can be changed to other DNS of choice
-PRIMARY_DNS="1.1.1.1"   
-SECONDARY_DNS="8.8.8.8"
-
+                                                                                                                       
+# Hardcoded DNS servers                                                                                                
+PRIMARY_DNS="1.1.1.1"                                                                                                  
+SECONDARY_DNS="8.8.8.8"                                                                                                
+                                                                                                               
 # === Parse arguments ===
 if [ $# -lt 3 ]; then
     echo "Usage:"
@@ -97,6 +96,8 @@ EOF
 sudo systemctl restart systemd-resolved
 
 # Set router's own DNS resolution to use upstream DNS directly
+# Remove immutable flag if it exists, then update
+sudo chattr -i /etc/resolv.conf 2>/dev/null || true
 sudo rm -f /etc/resolv.conf
 sudo tee /etc/resolv.conf > /dev/null <<EOF
 # Router's own DNS (managed by dynamic-router)

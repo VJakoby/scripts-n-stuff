@@ -195,7 +195,6 @@ echo "[INFO] Configuring dnsmasq for LAN DNS..."
 sudo systemctl stop dnsmasq 2>/dev/null || true
 
 sudo tee /etc/dnsmasq.d/lan.conf > /dev/null <<EOF
-sudo tee /etc/dnsmasq.d/lan.conf > /dev/null <<EOF
 # Bind only to LAN interface
 interface=$LAN_IFACE
 listen-address=$LAN_IP

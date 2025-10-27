@@ -9,6 +9,11 @@ It handles NAT, IP forwarding, LAN DNS via dnsmasq, and automatic WAN detection,
 
 ## Quick Start
 
+### To test manually (without installing service):
+```bash
+sudo ./dynamic-router.sh --run ens34 192.168.100.1/24
+```
+
 ### One-Time Installation
 Run the installation command once to set up the router service:
 

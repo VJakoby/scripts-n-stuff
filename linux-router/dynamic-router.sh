@@ -4,11 +4,11 @@
 #        ./dynamic-router.sh --run <LAN_IFACE> <LAN_IP/CIDR>
 
 set -e
-                                                                                                                       
-# Hardcoded DNS servers                                                                                                
-PRIMARY_DNS="1.1.1.1"                                                                                                  
-SECONDARY_DNS="8.8.8.8"                                                                                                
-                                                                                                               
+
+# Hardcoded DNS servers
+PRIMARY_DNS="1.1.1.1"
+SECONDARY_DNS="8.8.8.8"
+
 # === Parse arguments ===
 if [ $# -lt 3 ]; then
     echo "Usage:"
@@ -131,6 +131,23 @@ sudo ip addr flush dev "$LAN_IFACE"
 sudo ip addr add "$LAN_IP_CIDR" dev "$LAN_IFACE"
 sudo ip link set "$LAN_IFACE" up
 
+# Create a persistent netplan config for LAN interface
+echo "[INFO] Creating persistent netplan configuration..."
+sudo tee /etc/netplan/99-router-lan.yaml > /dev/null <<EOF
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    $LAN_IFACE:
+      addresses:
+        - $LAN_IP_CIDR
+      dhcp4: no
+      dhcp6: no
+      optional: false
+EOF
+
+sudo netplan apply
+
 # === Detect WAN dynamically ===
 echo "[INFO] Detecting WAN interface..."
 timeout=30
@@ -190,9 +207,15 @@ sudo iptables-save | sudo tee /etc/iptables/rules.v4 > /dev/null
 
 echo "[INFO] Iptables configured and saved"
 
-# === Configure dnsmasq for LAN DNS only ===
-echo "[INFO] Configuring dnsmasq for LAN DNS..."
+# === Configure dnsmasq for LAN DNS and DHCP ===
+echo "[INFO] Configuring dnsmasq for LAN DNS and DHCP..."
 sudo systemctl stop dnsmasq 2>/dev/null || true
+
+# Calculate DHCP range from LAN IP
+# e.g., 192.168.100.1/24 -> DHCP range 192.168.100.100-192.168.100.250
+LAN_NETWORK="${LAN_IP%.*}"  # Get first 3 octets (e.g., 192.168.100)
+DHCP_START="${LAN_NETWORK}.100"
+DHCP_END="${LAN_NETWORK}.250"
 
 sudo tee /etc/dnsmasq.d/lan.conf > /dev/null <<EOF
 # Bind only to LAN interface
@@ -214,17 +237,17 @@ bogus-priv
 # Cache settings
 cache-size=1000
 
-# DHCP configuration
-# Automatically serve DHCP in the same subnet as the router
-# Example: if router is 192.168.100.1/24 → range is 192.168.100.50–192.168.100.150
-dhcp-range=${LAN_IP%.*}.50,${LAN_IP%.*}.150,12h
+# DHCP settings
+dhcp-range=$DHCP_START,$DHCP_END,12h
+dhcp-option=option:router,$LAN_IP
+dhcp-option=option:dns-server,$LAN_IP
+dhcp-authoritative
 
-# Gateway and DNS offered to clients
-dhcp-option=3,$LAN_IP      # Default gateway
-dhcp-option=6,$LAN_IP      # DNS server
-
-# Allow static IPs outside the DHCP range without interference
+# Logging (optional, comment out if too verbose)
+log-dhcp
 EOF
+
+echo "[INFO] DHCP range configured: $DHCP_START - $DHCP_END"
 
 # Disable default dnsmasq config that might conflict
 sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.backup 2>/dev/null || true
@@ -259,8 +282,24 @@ echo "[INFO] =========================================="
 CURRENT_WAN=$WAN_IFACE
 echo "[INFO] Starting WAN interface monitor..."
 
+# Function to ensure LAN IP is always present
+ensure_lan_ip() {
+    # Check if LAN interface has the correct IP
+    CURRENT_LAN_IP=$(ip addr show "$LAN_IFACE" 2>/dev/null | grep "inet " | awk '{print $2}')
+    if [ "$CURRENT_LAN_IP" != "$LAN_IP_CIDR" ]; then
+        echo "[WARNING] LAN IP missing or incorrect. Reapplying..."
+        sudo ip addr flush dev "$LAN_IFACE" 2>/dev/null || true
+        sudo ip addr add "$LAN_IP_CIDR" dev "$LAN_IFACE"
+        sudo ip link set "$LAN_IFACE" up
+        echo "[INFO] LAN IP restored: $LAN_IP_CIDR"
+    fi
+}
+
 while true; do
     sleep 10
+    
+    # Ensure LAN IP is always present
+    ensure_lan_ip
     
     NEW_WAN=$(ip route | awk '/^default/ {print $5; exit}')
     

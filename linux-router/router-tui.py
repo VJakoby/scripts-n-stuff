@@ -11,6 +11,7 @@ import subprocess
 import time
 from datetime import datetime
 import sys
+import os
 
 def run_command(cmd):
     """Execute shell command and return output"""
@@ -40,6 +41,33 @@ def get_router_status():
     service_status = run_command("systemctl is-active dynamic-router.service 2>/dev/null")
     data['service_active'] = service_status == "active"
     data['service_status_raw'] = service_status
+
+    # Check if VPN routing is enabled in the service
+    exec_start = run_command("systemctl show dynamic-router.service -p ExecStart --value 2>/dev/null")
+    data['vpn_routing_enabled'] = '--vpn' in exec_start
+    
+    # Get VPN subnets file location
+    if '--subnets' in exec_start:
+        # Extract custom subnets file path
+        parts = exec_start.split('--subnets')
+        if len(parts) > 1:
+            data['vpn_subnets_file'] = parts[1].strip().split()[0]
+        else:
+            data['vpn_subnets_file'] = '/etc/router/vpn-subnets.txt'
+    else:
+        data['vpn_subnets_file'] = '/etc/router/vpn-subnets.txt'
+
+    # Read VPN subnets from file
+    data['vpn_subnets'] = []
+    if data['vpn_routing_enabled'] and os.path.exists(data['vpn_subnets_file']):
+        try:
+            with open(data['vpn_subnets_file'], 'r') as f:
+                for line in f:
+                    line = line.split('#')[0].strip()
+                    if line and '/' in line:
+                        data['vpn_subnets'].append(line)
+        except:
+            pass
 
     # Uptime
     if data['service_active']:
@@ -78,9 +106,10 @@ def get_router_status():
     lan_dns_output = run_command("grep '^server=' /etc/dnsmasq.d/lan.conf 2>/dev/null | cut -d'=' -f2")
     data['lan_dns'] = lan_dns_output.split() if lan_dns_output else []
 
-    # VPN detection
-    data['vpn_iface'] = run_command("ip link show | grep -oP '(tun|wg|tap)\\d+' | head -1")
-    data['vpn_active'] = bool(data['vpn_iface'])
+    # VPN detection - detect all VPN interfaces
+    vpn_output = run_command("ip link show | grep -oP '(tun|wg|tap|ppp|ipsec)\\d+'")
+    data['vpn_interfaces'] = vpn_output.split() if vpn_output else []
+    data['vpn_active'] = len(data['vpn_interfaces']) > 0
 
     # Traffic stats
     if data['wan_iface']:
@@ -142,6 +171,52 @@ def show_logs(stdscr):
     stdscr.refresh()
     stdscr.getch()
 
+def show_vpn_details(stdscr, status_data):
+    """Show detailed VPN configuration"""
+    stdscr.clear()
+    height, width = stdscr.getmaxyx()
+    title = "═ VPN ROUTING DETAILS (Press any key to return) ═"
+    stdscr.addstr(0, (width-len(title))//2, title, curses.A_BOLD | curses.color_pair(6))
+    
+    y = 2
+    stdscr.addstr(y, 2, "VPN Routing Status:", curses.A_BOLD)
+    if status_data.get('vpn_routing_enabled'):
+        stdscr.addstr(y, 25, "ENABLED", curses.color_pair(3) | curses.A_BOLD)
+    else:
+        stdscr.addstr(y, 25, "DISABLED", curses.color_pair(4) | curses.A_BOLD)
+    
+    y += 2
+    stdscr.addstr(y, 2, "Subnets File:", curses.A_BOLD)
+    stdscr.addstr(y, 25, status_data.get('vpn_subnets_file', 'N/A'), curses.color_pair(1))
+    
+    y += 2
+    stdscr.addstr(y, 2, "Active VPN Interfaces:", curses.A_BOLD)
+    vpn_ifaces = status_data.get('vpn_interfaces', [])
+    if vpn_ifaces:
+        for i, iface in enumerate(vpn_ifaces):
+            stdscr.addstr(y+i, 25, f"● {iface}", curses.color_pair(3))
+            y += 1
+        y -= 1
+    else:
+        stdscr.addstr(y, 25, "None", curses.color_pair(4))
+    
+    y += 2
+    stdscr.addstr(y, 2, "Configured Subnets:", curses.A_BOLD)
+    y += 1
+    subnets = status_data.get('vpn_subnets', [])
+    if subnets:
+        for i, subnet in enumerate(subnets):
+            if y + i >= height - 3:
+                stdscr.addstr(y+i, 4, f"... and {len(subnets)-i} more", curses.color_pair(5))
+                break
+            stdscr.addstr(y+i, 4, f"• {subnet}", curses.color_pair(1))
+    else:
+        stdscr.addstr(y, 4, "No subnets configured", curses.color_pair(4))
+    
+    stdscr.addstr(height-2, 2, "Press any key to return...", curses.color_pair(5))
+    stdscr.refresh()
+    stdscr.getch()
+
 def confirm_action(stdscr, message):
     height, width = stdscr.getmaxyx()
     dialog_height = 7
@@ -199,9 +274,9 @@ def main(stdscr):
         stdscr.addstr(y, 15, f"({raw_status})", curses.color_pair(5))
         stdscr.addstr(y, 35, f"Uptime: {status_data.get('uptime','N/A')}", curses.color_pair(5))
 
-        # NETWORK box (tightened)
+        # NETWORK box
         y += 2
-        draw_box(stdscr, y, 2, 8, width-4, "NETWORK INTERFACES")
+        draw_box(stdscr, y, 2, 9, width-4, "NETWORK INTERFACES")
         y += 1
         stdscr.addstr(y, 4, "WAN:", curses.A_BOLD)
         stdscr.addstr(y, 10, f"{status_data.get('wan_iface','N/A')} ({status_data.get('wan_ip','N/A')})", curses.color_pair(3))
@@ -215,12 +290,25 @@ def main(stdscr):
         stdscr.addstr(y, 50, ", ".join(status_data.get('lan_dns',[])), curses.color_pair(3))
 
         y += 1
-        stdscr.addstr(y, 4, "VPN:", curses.A_BOLD)
-        if status_data.get('vpn_active'):
-            vpn_text = f"Connected ({status_data.get('vpn_iface','unknown')})"
-            stdscr.addstr(y, 10, vpn_text, curses.color_pair(3))
+        stdscr.addstr(y, 4, "VPN Routing:", curses.A_BOLD)
+        if status_data.get('vpn_routing_enabled'):
+            stdscr.addstr(y, 18, "ENABLED", curses.color_pair(3) | curses.A_BOLD)
+            if status_data.get('vpn_active'):
+                vpn_ifaces = status_data.get('vpn_interfaces', [])
+                vpn_text = f" ({', '.join(vpn_ifaces[:2])})"
+                if len(vpn_ifaces) > 2:
+                    vpn_text = f" ({vpn_ifaces[0]}, +{len(vpn_ifaces)-1} more)"
+                stdscr.addstr(y, 26, vpn_text, curses.color_pair(1))
+            else:
+                stdscr.addstr(y, 26, "(no active VPN)", curses.color_pair(4))
+            
+            # Show subnet count
+            subnet_count = len(status_data.get('vpn_subnets', []))
+            if subnet_count > 0:
+                stdscr.addstr(y, 50, f"Subnets: {subnet_count}", curses.color_pair(6))
+                stdscr.addstr(y, 65, "[V for details]", curses.color_pair(5))
         else:
-            stdscr.addstr(y, 10, "Disconnected", curses.color_pair(4))
+            stdscr.addstr(y, 18, "DISABLED", curses.color_pair(4))
 
         # Statistics
         y += 2
@@ -248,7 +336,7 @@ def main(stdscr):
         y = height-4
         stdscr.addstr(y, 2, "─"*(width-4), curses.color_pair(5))
         y += 1
-        controls = "[Q]uit  [R]estart  [S]top  [L]ogs  [H]elp"
+        controls = "[Q]uit  [R]estart  [S]top  [L]ogs  [V]PN Info  [H]elp"
         stdscr.addstr(y, (width-len(controls))//2, controls, curses.A_BOLD|curses.color_pair(6))
 
         stdscr.refresh()
@@ -269,10 +357,12 @@ def main(stdscr):
                     time.sleep(2)
             elif key in [ord('l'), ord('L')]:
                 show_logs(stdscr)
+            elif key in [ord('v'), ord('V')]:
+                show_vpn_details(stdscr, status_data)
             elif key in [ord('h'), ord('H')]:
                 stdscr.clear()
                 help_text = ["═══ HELP ═══","","Q - Quit","R - Restart router service","S - Stop router service",
-                             "L - View full logs","H - Show this help","","Dashboard refreshes every second.","",
+                             "L - View full logs","V - View VPN routing details","H - Show this help","","Dashboard refreshes every second.","",
                              "Press any key to return..."]
                 for i,line in enumerate(help_text):
                     attr = curses.A_BOLD if i==0 else curses.A_NORMAL

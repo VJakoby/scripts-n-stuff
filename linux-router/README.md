@@ -2,6 +2,8 @@
 A lightweight Linux VM setup that functions as a dynamic router for other VMs.
 It handles NAT, IP forwarding, LAN DNS via dnsmasq, and automatic WAN detection, making it easy to spin up a private VM network with internet access.
 
+Idea came from me, coding primarily made by [Claude](http://claude.ai).
+
 ## Features
 
 - ✅ **Single command installation** — no manual configuration needed

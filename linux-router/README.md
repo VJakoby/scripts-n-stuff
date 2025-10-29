@@ -85,16 +85,10 @@ sudo systemctl disable dynamic-router.service
 To completely remove the router service:
 
 ```bash
-sudo systemctl stop dynamic-router.service
-sudo systemctl disable dynamic-router.service
-sudo rm /etc/systemd/system/dynamic-router.service
-sudo rm /usr/local/bin/dynamic-router.sh
-sudo systemctl daemon-reload
+sudo systemctl stop dynamic-router.service && sudo systemctl disable dynamic-router.service && sudo rm /etc/systemd/system/dynamic-router.service && sudo rm /usr/local/bin/dynamic-router.sh && sudo systemctl daemon-reload
 ```
 
 Optionally, restore DNS settings:
 ```bash
-sudo chattr -i /etc/resolv.conf
-sudo rm /etc/systemd/resolved.conf.d/no-stub.conf
-sudo systemctl restart systemd-resolved
+sudo chattr -i /etc/resolv.conf && sudo rm /etc/systemd/resolved.conf.d/no-stub.conf && sudo systemctl restart systemd-resolved
 ```

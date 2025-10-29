@@ -238,7 +238,7 @@ read_vpn_subnets() {
             line=$(echo "$line" | sed 's/#.*//' | xargs)
             if [ -n "$line" ]; then
                 # Validate CIDR format
-                if echo "$line" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}'
+                if echo "$line" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$'
 
 # === Function to configure VPN routes and iptables ===
 configure_vpn_routing() {
@@ -354,7 +354,7 @@ update_dnsmasq_upstream() {
     WAN_DNS_SERVERS=$(nmcli dev show "$CURRENT_WAN" 2>/dev/null | awk '/IP4.DNS/ {print $2}')
     DNSMASQ_SERVERS=""
     for dns in $WAN_DNS_SERVERS; do
-        DNSMASQ_SERVERS+="server=$dns\n"
+        DNSMASQ_SERVERS+=$'server='"$dns"$'\n'
     done
 
     sudo tee /etc/dnsmasq.d/lan.conf > /dev/null <<EOF

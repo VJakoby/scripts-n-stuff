@@ -41,6 +41,21 @@ def get_router_status():
     service_status = run_command("systemctl is-active dynamic-router.service 2>/dev/null")
     data['service_active'] = service_status == "active"
     data['service_status_raw'] = service_status
+    
+    # Check if running in --run mode (not as service)
+    run_mode_check = run_command("pgrep -f 'dynamic-router.sh --run' | wc -l")
+    data['run_mode_active'] = int(run_mode_check) > 0 if run_mode_check else False
+    
+    # Overall running status
+    data['is_running'] = data['service_active'] or data['run_mode_active']
+    
+    # Determine run mode
+    if data['service_active']:
+        data['run_mode'] = "service"
+    elif data['run_mode_active']:
+        data['run_mode'] = "manual"
+    else:
+        data['run_mode'] = "stopped"
 
     # Check if VPN routing is enabled in the service
     exec_start = run_command("systemctl show dynamic-router.service -p ExecStart --value 2>/dev/null")
@@ -82,6 +97,17 @@ def get_router_status():
                 data['uptime'] = f"{days}d {hours}h {minutes}m"
             except:
                 data['uptime'] = "Unknown"
+    elif data['run_mode_active']:
+        # For --run mode, try to get process start time
+        pid = run_command("pgrep -f 'dynamic-router.sh --run' | head -1")
+        if pid:
+            start_time_epoch = run_command(f"ps -p {pid} -o lstart= 2>/dev/null")
+            if start_time_epoch:
+                data['uptime'] = "Running (manual mode)"
+            else:
+                data['uptime'] = "Running"
+        else:
+            data['uptime'] = "Running"
     else:
         data['uptime'] = "Not running"
 
@@ -104,7 +130,17 @@ def get_router_status():
         data['lan_ip'] = "N/A"
 
     lan_dns_output = run_command("grep '^server=' /etc/dnsmasq.d/lan.conf 2>/dev/null | cut -d'=' -f2")
-    data['lan_dns'] = lan_dns_output.split() if lan_dns_output else []
+    # Remove duplicates while preserving order
+    if lan_dns_output:
+        seen = set()
+        unique_dns = []
+        for dns in lan_dns_output.split():
+            if dns not in seen:
+                seen.add(dns)
+                unique_dns.append(dns)
+        data['lan_dns'] = unique_dns
+    else:
+        data['lan_dns'] = []
 
     # VPN detection - detect all VPN interfaces
     vpn_output = run_command("ip link show | grep -oP '(tun|wg|tap|ppp|ipsec)\\d+'")
@@ -289,12 +325,20 @@ def main(stdscr):
         stdscr.addstr(0, width-len(timestamp)-2, timestamp, curses.color_pair(5))
 
         y = 2
-        status_color = curses.color_pair(3) if status_data.get('service_active') else curses.color_pair(2)
-        status_text = "● RUNNING" if status_data.get('service_active') else "● STOPPED"
+        status_color = curses.color_pair(3) if status_data.get('is_running') else curses.color_pair(2)
+        status_text = "● RUNNING" if status_data.get('is_running') else "● STOPPED"
         stdscr.addstr(y, 2, status_text, status_color | curses.A_BOLD)
-        raw_status = status_data.get('service_status_raw','unknown')
-        stdscr.addstr(y, 15, f"({raw_status})", curses.color_pair(5))
-        stdscr.addstr(y, 35, f"Uptime: {status_data.get('uptime','N/A')}", curses.color_pair(5))
+        
+        # Show mode
+        run_mode = status_data.get('run_mode', 'unknown')
+        if run_mode == "service":
+            mode_text = "(systemd service)"
+        elif run_mode == "manual":
+            mode_text = "(manual --run mode)"
+        else:
+            mode_text = f"({status_data.get('service_status_raw','unknown')})"
+        stdscr.addstr(y, 15, mode_text, curses.color_pair(5))
+        stdscr.addstr(y, 45, f"Uptime: {status_data.get('uptime','N/A')}", curses.color_pair(5))
 
         # NETWORK box
         y += 2

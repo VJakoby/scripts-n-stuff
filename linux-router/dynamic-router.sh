@@ -1,7 +1,7 @@
 #!/bin/bash
-# dynamic-router.sh — Automatic Dynamic WAN + static LAN router for VMs
-# Usage: ./dynamic-router.sh --install-service <LAN_IFACE> <LAN_IP/CIDR>                                  
-#        ./dynamic-router.sh --run <LAN_IFACE> <LAN_IP/CIDR>                                                
+# dynamic-router.sh — Automatic Dynamic WAN + static LAN router for VMs with VPN support
+# Usage: ./dynamic-router.sh --install-service <LAN_IFACE> <LAN_IP/CIDR> [--vpn] [--subnets <file>]
+#        ./dynamic-router.sh --run <LAN_IFACE> <LAN_IP/CIDR> [--vpn] [--subnets <file>]
 
 set -e
 
@@ -9,11 +9,27 @@ set -e
 FALLBACK_DNS1="1.1.1.1"
 FALLBACK_DNS2="8.8.8.8"
 
+# Default VPN subnets file location
+VPN_SUBNETS_FILE="/etc/router/vpn-subnets.txt"
+
+# VPN routing disabled by default
+ENABLE_VPN_ROUTING=false
+
 # === Parse arguments ===
 if [ $# -lt 3 ]; then
     echo "Usage:"
-    echo "  $0 --install-service <LAN_IFACE> <LAN_IP/CIDR>"
-    echo "  $0 --run <LAN_IFACE> <LAN_IP/CIDR>"
+    echo "  $0 --install-service <LAN_IFACE> <LAN_IP/CIDR> [OPTIONS]"
+    echo "  $0 --run <LAN_IFACE> <LAN_IP/CIDR> [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --vpn                 Enable VPN routing (monitors and routes VPN interfaces)"
+    echo "  --subnets <file>      Path to file containing VPN subnets (one per line)"
+    echo "                        Default: /etc/router/vpn-subnets.txt"
+    echo ""
+    echo "Examples:"
+    echo "  $0 --install-service eth1 10.0.0.1/24"
+    echo "  $0 --install-service eth1 10.0.0.1/24 --vpn"
+    echo "  $0 --run eth1 10.0.0.1/24 --vpn --subnets /etc/openvpn/subnets.txt"
     exit 1
 fi
 
@@ -22,25 +38,63 @@ LAN_IFACE="$2"
 LAN_IP_CIDR="$3"
 LAN_IP="${LAN_IP_CIDR%/*}"
 
+# Parse optional arguments
+shift 3
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --vpn)
+            ENABLE_VPN_ROUTING=true
+            shift
+            ;;
+        --subnets)
+            VPN_SUBNETS_FILE="$2"
+            shift 2
+            ;;
+        *)
+            echo "[ERROR] Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
 # === Install service mode ===
 if [ "$MODE" == "--install-service" ]; then
     echo "[INFO] Installing dynamic-router service..."
     
-    # Copy script to /usr/local/bin
     SCRIPT_PATH="$(readlink -f "$0")"
     sudo cp "$SCRIPT_PATH" /usr/local/bin/dynamic-router.sh
     sudo chmod +x /usr/local/bin/dynamic-router.sh
     
-    # Create systemd service
+    sudo mkdir -p /etc/router
+    
+    if [ ! -f "$VPN_SUBNETS_FILE" ]; then
+        sudo tee "$VPN_SUBNETS_FILE" > /dev/null <<EOF
+# VPN Subnets Configuration
+# Add one subnet per line (CIDR notation)
+# Example:
+# 10.8.0.0/24
+# 192.168.100.0/24
+EOF
+        echo "[INFO] Created empty VPN subnets file at $VPN_SUBNETS_FILE"
+    fi
+    
+    EXEC_START_CMD="/usr/local/bin/dynamic-router.sh --run $LAN_IFACE $LAN_IP_CIDR"
+    if [ "$ENABLE_VPN_ROUTING" = true ]; then
+        EXEC_START_CMD="$EXEC_START_CMD --vpn"
+        if [ "$VPN_SUBNETS_FILE" != "/etc/router/vpn-subnets.txt" ]; then
+            EXEC_START_CMD="$EXEC_START_CMD --subnets $VPN_SUBNETS_FILE"
+        fi
+    fi
+    
     sudo tee /etc/systemd/system/dynamic-router.service > /dev/null <<EOF
 [Unit]
-Description=Dynamic VM Router
+Description=Dynamic VM Router with VPN Support
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/dynamic-router.sh --run $LAN_IFACE $LAN_IP_CIDR
+ExecStart=$EXEC_START_CMD
 Restart=always
 RestartSec=5
 StandardOutput=journal
@@ -50,12 +104,20 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
     
-    # Enable and start
     sudo systemctl daemon-reload
     sudo systemctl enable dynamic-router.service
     sudo systemctl start dynamic-router.service
     
     echo "[INFO] Service installed and started."
+    if [ "$ENABLE_VPN_ROUTING" = true ]; then
+        echo "[INFO] VPN routing: ENABLED"
+        echo "[INFO] VPN subnets file: $VPN_SUBNETS_FILE"
+        echo "[INFO] Edit VPN subnets with: sudo nano $VPN_SUBNETS_FILE"
+        echo "[INFO] Reload config with: sudo systemctl restart dynamic-router.service"
+    else
+        echo "[INFO] VPN routing: DISABLED"
+        echo "[INFO] To enable VPN routing, reinstall with --vpn flag"
+    fi
     echo "[INFO] Check status with: sudo systemctl status dynamic-router.service"
     echo "[INFO] View logs with: sudo journalctl -u dynamic-router.service -f"
     exit 0
@@ -70,6 +132,12 @@ fi
 echo "[INFO] Starting dynamic router setup..."
 echo "[INFO] LAN Interface: $LAN_IFACE"
 echo "[INFO] LAN IP: $LAN_IP_CIDR"
+if [ "$ENABLE_VPN_ROUTING" = true ]; then
+    echo "[INFO] VPN Routing: ENABLED"
+    echo "[INFO] VPN Subnets File: $VPN_SUBNETS_FILE"
+else
+    echo "[INFO] VPN Routing: DISABLED (use --vpn to enable)"
+fi
 
 # === Ensure required packages are installed ===
 REQUIRED_PKGS=(dnsmasq iptables iptables-persistent curl net-tools)
@@ -103,8 +171,6 @@ sudo ip addr flush dev "$LAN_IFACE"
 sudo ip addr add "$LAN_IP_CIDR" dev "$LAN_IFACE"
 sudo ip link set "$LAN_IFACE" up
 
-# Persistent netplan config
-echo "[INFO] Creating persistent netplan configuration..."
 sudo tee /etc/netplan/99-router-lan.yaml > /dev/null <<EOF
 network:
   version: 2
@@ -141,6 +207,96 @@ echo "[INFO] Enabling IP forwarding..."
 sudo sysctl -w net.ipv4.ip_forward=1
 echo "net.ipv4.ip_forward=1" | sudo tee /etc/sysctl.d/99-router.conf > /dev/null
 
+# === Detect VPN interfaces ===
+detect_vpn_interfaces() {
+    ip link show | grep -E '^[0-9]+: (tun|tap|ppp|wg|ipsec)[0-9]*:' | awk -F': ' '{print $2}' | awk '{print $1}'
+}
+
+# === Read VPN subnets ===
+read_vpn_subnets() {
+    local subnets_file="$VPN_SUBNETS_FILE"
+    local line
+    local subnets=()
+    if [ -f "$subnets_file" ]; then
+        while IFS= read -r line; do
+            # Remove comments and whitespace
+            line=$(echo "$line" | sed 's/#.*//' | xargs)
+            if [ -n "$line" ]; then
+                if [[ "$line" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}/[0-9]{1,2}$ ]]; then
+                    subnets+=("$line")
+                else
+                    echo "[WARNING] Invalid CIDR, skipping: $line"
+                fi
+            fi
+        done < "$subnets_file"
+    fi
+    # Output one subnet per line
+    for subnet in "${subnets[@]}"; do
+        echo "$subnet"
+    done
+}
+
+# === Configure VPN routing ===
+configure_vpn_routing() {
+    echo "[DEBUG] Starting VPN routing configuration..."
+    local vpn_ifaces=($(detect_vpn_interfaces))
+    local vpn_subnets=($(read_vpn_subnets))
+    
+    if [ ${#vpn_ifaces[@]} -eq 0 ]; then
+        echo "[INFO] No VPN interfaces detected"
+        return
+    fi
+    
+    echo "[INFO] Detected VPN interfaces: ${vpn_ifaces[*]}"
+    
+    if [ ${#vpn_subnets[@]} -eq 0 ]; then
+        echo "[WARNING] No VPN subnets configured in $VPN_SUBNETS_FILE"
+        echo "[INFO] VPN routing will use automatic route detection only"
+    else
+        echo "[INFO] Configured VPN subnets: ${vpn_subnets[*]}"
+    fi
+    
+    for vpn_iface in "${vpn_ifaces[@]}"; do
+        echo "[INFO] Configuring routes for VPN interface: $vpn_iface"
+        sudo iptables -A FORWARD -i "$LAN_IFACE" -o "$vpn_iface" -j ACCEPT 2>/dev/null || true
+        sudo iptables -A FORWARD -i "$vpn_iface" -o "$LAN_IFACE" -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
+        sudo iptables -A INPUT -i "$vpn_iface" -j ACCEPT 2>/dev/null || true
+        sudo iptables -A OUTPUT -o "$vpn_iface" -j ACCEPT 2>/dev/null || true
+        sudo iptables -t nat -A POSTROUTING -o "$vpn_iface" -j MASQUERADE 2>/dev/null || true
+        
+        for subnet in "${vpn_subnets[@]}"; do
+            if ! ip route show "$subnet" | grep -q "$vpn_iface"; then
+                echo "[INFO] Adding route: $subnet via $vpn_iface"
+                sudo ip route add "$subnet" dev "$vpn_iface" 2>/dev/null || echo "[WARNING] Route may already exist"
+            fi
+            sudo iptables -A FORWARD -s "$subnet" -i "$vpn_iface" -o "$LAN_IFACE" -j ACCEPT 2>/dev/null || true
+            sudo iptables -A FORWARD -d "$subnet" -i "$LAN_IFACE" -o "$vpn_iface" -j ACCEPT 2>/dev/null || true
+        done
+    done
+    
+    sudo iptables-save | sudo tee /etc/iptables/rules.v4 > /dev/null
+    echo "[INFO] VPN routing configured"
+}
+
+# === Clean up old VPN rules ===
+cleanup_vpn_rules() {
+    local old_vpn_ifaces="$1"
+    if [ -z "$old_vpn_ifaces" ]; then
+        return
+    fi
+    echo "[INFO] Cleaning up old VPN routes..."
+    for vpn_iface in $old_vpn_ifaces; do
+        if ! ip link show "$vpn_iface" &> /dev/null; then
+            echo "[INFO] Removing rules for defunct VPN interface: $vpn_iface"
+            sudo iptables -D FORWARD -i "$LAN_IFACE" -o "$vpn_iface" -j ACCEPT 2>/dev/null || true
+            sudo iptables -D FORWARD -i "$vpn_iface" -o "$LAN_IFACE" -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
+            sudo iptables -D INPUT -i "$vpn_iface" -j ACCEPT 2>/dev/null || true
+            sudo iptables -D OUTPUT -o "$vpn_iface" -j ACCEPT 2>/dev/null || true
+            sudo iptables -t nat -D POSTROUTING -o "$vpn_iface" -j MASQUERADE 2>/dev/null || true
+        fi
+    done
+}
+
 # === Configure iptables ===
 echo "[INFO] Configuring iptables..."
 sudo iptables -F
@@ -157,50 +313,70 @@ sudo iptables -A INPUT -p icmp -j ACCEPT
 sudo iptables -A FORWARD -i $LAN_IFACE -o $WAN_IFACE -j ACCEPT
 sudo iptables -A FORWARD -i $WAN_IFACE -o $LAN_IFACE -m state --state ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -t nat -A POSTROUTING -o $WAN_IFACE -j MASQUERADE
+
+if [ "$ENABLE_VPN_ROUTING" = true ]; then
+    configure_vpn_routing
+fi
+
 sudo mkdir -p /etc/iptables
 sudo iptables-save | sudo tee /etc/iptables/rules.v4 > /dev/null
 echo "[INFO] Iptables configured and saved"
 
-# === Function to update dnsmasq upstream based on WAN DNS ===
+# === Update dnsmasq based on WAN DNS ===
 update_dnsmasq_upstream() {
-    WAN_DNS_SERVERS=$(nmcli dev show "$CURRENT_WAN" | awk '/IP4.DNS/ {print $2}')
-    DNSMASQ_SERVERS=""
-    for dns in $WAN_DNS_SERVERS; do
-        DNSMASQ_SERVERS+="server=$dns\n"
-    done
-
-    sudo tee /etc/dnsmasq.d/lan.conf > /dev/null <<EOF
-interface=$LAN_IFACE
-listen-address=$LAN_IP
-bind-interfaces
-
-# Upstream DNS (dynamic from WAN)
-$DNSMASQ_SERVERS
-
-# Static fallback
-server=$FALLBACK_DNS1
-server=$FALLBACK_DNS2
-
-no-resolv
-domain-needed
-bogus-priv
-cache-size=1000
-
-# DHCP settings
-dhcp-range=${LAN_IP%.*}.100,${LAN_IP%.*}.250,12h
-dhcp-option=option:router,$LAN_IP
-dhcp-option=option:dns-server,$LAN_IP
-dhcp-authoritative
-
-log-dhcp
-EOF
-
-    sudo systemctl restart dnsmasq
+    WAN_DNS_SERVERS=""
+    if command -v nmcli &> /dev/null; then
+        WAN_DNS_SERVERS=$(nmcli dev show "$CURRENT_WAN" 2>/dev/null | awk '/IP4.DNS/ {print $2}')
+    fi
+    if [ -z "$WAN_DNS_SERVERS" ] && command -v resolvectl &> /dev/null; then
+        WAN_DNS_SERVERS=$(resolvectl dns "$CURRENT_WAN" 2>/dev/null | awk '{for(i=2;i<=NF;i++) print $i}')
+    fi
+    if [ -z "$WAN_DNS_SERVERS" ] && [ -f /etc/resolv.conf ]; then
+        WAN_DNS_SERVERS=$(grep '^nameserver' /etc/resolv.conf | awk '{print $2}' | grep -v '^127\.')
+    fi
+    declare -a SERVER_LINES
+    if [ -n "$WAN_DNS_SERVERS" ]; then
+        for dns in $WAN_DNS_SERVERS; do
+            if [[ "$dns" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+                SERVER_LINES+=("server=$dns")
+            fi
+        done
+    fi
+    SERVER_LINES+=("server=$FALLBACK_DNS1")
+    SERVER_LINES+=("server=$FALLBACK_DNS2")
+    if [ ${#SERVER_LINES[@]} -eq 2 ]; then
+        echo "[WARNING] No WAN DNS servers found, using fallback only"
+    fi
+    {
+        echo "interface=$LAN_IFACE"
+        echo "listen-address=$LAN_IP"
+        echo "bind-interfaces"
+        echo ""
+        echo "# Upstream DNS servers"
+        for line in "${SERVER_LINES[@]}"; do
+            echo "$line"
+        done
+        echo ""
+        echo "no-resolv"
+        echo "domain-needed"
+        echo "bogus-priv"
+        echo "cache-size=1000"
+        echo ""
+        echo "# DHCP settings"
+        echo "dhcp-range=${LAN_IP%.*}.100,${LAN_IP%.*}.250,12h"
+        echo "dhcp-option=option:router,$LAN_IP"
+        echo "dhcp-option=option:dns-server,$LAN_IP"
+        echo "dhcp-authoritative"
+        echo ""
+        echo "log-dhcp"
+    } | sudo tee /etc/dnsmasq.d/lan.conf > /dev/null
+    sudo systemctl restart dnsmasq || sudo journalctl -u dnsmasq -n 20 --no-pager
     echo "[INFO] dnsmasq upstream DNS updated for WAN: $CURRENT_WAN"
 }
 
-# === WAN watcher and LAN IP enforcement ===
+# === WAN and VPN monitoring ===
 CURRENT_WAN=$WAN_IFACE
+CURRENT_VPN_IFACES=""
 update_dnsmasq_upstream
 
 ensure_lan_ip() {
@@ -214,35 +390,27 @@ ensure_lan_ip() {
     fi
 }
 
-echo "[INFO] Starting WAN interface monitor..."
+echo "[INFO] Starting WAN and VPN interface monitor..."
 while true; do
     sleep 10
-
     ensure_lan_ip
 
     NEW_WAN=$(ip route | awk '/^default/ {print $5; exit}')
-
-    if [ -z "$NEW_WAN" ] || [ "$NEW_WAN" == "$LAN_IFACE" ]; then
-        continue
+    if [ "$NEW_WAN" != "$CURRENT_WAN" ] && [ -n "$NEW_WAN" ]; then
+        echo "[INFO] WAN interface changed: $CURRENT_WAN -> $NEW_WAN"
+        CURRENT_WAN="$NEW_WAN"
+        update_dnsmasq_upstream
+        sudo iptables -t nat -D POSTROUTING -o "$CURRENT_WAN" -j MASQUERADE 2>/dev/null || true
+        sudo iptables -t nat -A POSTROUTING -o "$CURRENT_WAN" -j MASQUERADE
     fi
 
-    if [ "$NEW_WAN" != "$CURRENT_WAN" ]; then
-        echo "[INFO] WAN interface changed: $CURRENT_WAN -> $NEW_WAN"
-
-        # Remove old NAT & forwarding rules
-        sudo iptables -t nat -D POSTROUTING -o $CURRENT_WAN -j MASQUERADE 2>/dev/null || true
-        sudo iptables -D FORWARD -i $LAN_IFACE -o $CURRENT_WAN -j ACCEPT 2>/dev/null || true
-        sudo iptables -D FORWARD -i $CURRENT_WAN -o $LAN_IFACE -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
-
-        # Apply rules for new WAN
-        sudo iptables -t nat -A POSTROUTING -o $NEW_WAN -j MASQUERADE
-        sudo iptables -A FORWARD -i $LAN_IFACE -o $NEW_WAN -j ACCEPT
-        sudo iptables -A FORWARD -i $NEW_WAN -o $LAN_IFACE -m state --state ESTABLISHED,RELATED -j ACCEPT
-
-        sudo iptables-save | sudo tee /etc/iptables/rules.v4 > /dev/null
-
-        # Update dnsmasq for new WAN
-        CURRENT_WAN=$NEW_WAN
-        update_dnsmasq_upstream
+    if [ "$ENABLE_VPN_ROUTING" = true ]; then
+        VPN_IFACES=$(detect_vpn_interfaces)
+        if [ "$VPN_IFACES" != "$CURRENT_VPN_IFACES" ]; then
+            echo "[INFO] VPN interfaces changed: $CURRENT_VPN_IFACES -> $VPN_IFACES"
+            cleanup_vpn_rules "$CURRENT_VPN_IFACES"
+            CURRENT_VPN_IFACES="$VPN_IFACES"
+            configure_vpn_routing
+        fi
     fi
 done

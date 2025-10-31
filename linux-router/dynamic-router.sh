@@ -176,7 +176,9 @@ network:
   version: 2
   renderer: networkd
   ethernets:
-    $LAN_IFACE:
+    lan:
+      match:
+        name: "$LAN_IFACE"
       addresses:
         - $LAN_IP_CIDR
       dhcp4: no

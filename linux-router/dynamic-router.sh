@@ -2,6 +2,7 @@
 # dynamic-router.sh — Automatic Dynamic WAN + static LAN router for VMs with VPN support
 # Usage: ./dynamic-router.sh --install-service <LAN_IFACE> <LAN_IP/CIDR> [--vpn] [--subnets <file>]
 #        ./dynamic-router.sh --run <LAN_IFACE> <LAN_IP/CIDR> [--vpn] [--subnets <file>]
+#        ./dynamic-router.sh --reset
 
 set -e
 
@@ -15,11 +16,73 @@ VPN_SUBNETS_FILE="/etc/router/vpn-subnets.txt"
 # VPN routing disabled by default
 ENABLE_VPN_ROUTING=false
 
+# === Reset mode ===
+if [ "$1" == "--reset" ]; then
+    echo "[INFO] ============================================"
+    echo "[INFO] RESETTING ROUTER CONFIGURATION"
+    echo "[INFO] ============================================"
+    
+    echo "[INFO] Stopping dynamic-router service if running..."
+    sudo systemctl stop dynamic-router.service 2>/dev/null || true
+    sudo systemctl disable dynamic-router.service 2>/dev/null || true
+    
+    echo "[INFO] Flushing iptables rules..."
+    sudo iptables -F
+    sudo iptables -t nat -F
+    sudo iptables -t mangle -F
+    sudo iptables -X
+    sudo iptables -P INPUT ACCEPT
+    sudo iptables -P FORWARD ACCEPT
+    sudo iptables -P OUTPUT ACCEPT
+    sudo rm -f /etc/iptables/rules.v4
+    
+    echo "[INFO] Stopping dnsmasq and cleaning config..."
+    sudo systemctl stop dnsmasq
+    sudo rm -f /etc/dnsmasq.d/lan.conf
+    sudo systemctl restart dnsmasq
+    
+    echo "[INFO] Restoring system DNS to default upstream provided by network..."
+    # Remove any forced /etc/resolv.conf immutability
+    sudo chattr -i /etc/resolv.conf 2>/dev/null || true
+    # Remove manual overrides from dnsmasq or systemd-resolved
+    sudo rm -f /etc/dnsmasq.d/lan.conf
+    sudo rm -f /etc/systemd/resolved.conf.d/no-stub.conf 2>/dev/null
+    # Restart resolvers
+    sudo systemctl restart systemd-resolved 2>/dev/null || true
+    sudo systemctl restart NetworkManager 2>/dev/null || true
+    # If /etc/resolv.conf is still a static file, link it to systemd stub
+    if [ ! -L /etc/resolv.conf ]; then
+        sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+    fi
+    echo "[INFO] System DNS restored to default upstream."
+    
+    echo "[INFO] Flushing LAN interfaces..."
+    for iface in $(ip -o link show | awk -F': ' '{print $2}'); do
+        sudo ip addr flush dev $iface 2>/dev/null || true
+    done
+    
+    echo "[INFO] Removing custom netplan LAN configuration..."
+    sudo rm -f /etc/netplan/99-router-lan.yaml
+    sudo netplan apply || true
+    
+    echo "[INFO] Disabling IP forwarding..."
+    sudo sysctl -w net.ipv4.ip_forward=0 2>/dev/null || true
+    sudo rm -f /etc/sysctl.d/99-router.conf
+    
+    echo "[INFO] ============================================"
+    echo "[INFO] RESET COMPLETE"
+    echo "[INFO] ============================================"
+    echo "[INFO] Cleanup complete. System is ready for fresh router script."
+    echo "[INFO] You can now run: $0 --install-service <LAN_IFACE> <LAN_IP/CIDR>"
+    exit 0
+fi
+
 # === Parse arguments ===
 if [ $# -lt 3 ]; then
     echo "Usage:"
     echo "  $0 --install-service <LAN_IFACE> <LAN_IP/CIDR> [OPTIONS]"
     echo "  $0 --run <LAN_IFACE> <LAN_IP/CIDR> [OPTIONS]"
+    echo "  $0 --reset"
     echo ""
     echo "Options:"
     echo "  --vpn                 Enable VPN routing (monitors and routes VPN interfaces)"
@@ -30,6 +93,7 @@ if [ $# -lt 3 ]; then
     echo "  $0 --install-service eth1 10.0.0.1/24"
     echo "  $0 --install-service eth1 10.0.0.1/24 --vpn"
     echo "  $0 --run eth1 10.0.0.1/24 --vpn --subnets /etc/openvpn/subnets.txt"
+    echo "  $0 --reset"
     exit 1
 fi
 
@@ -120,6 +184,7 @@ EOF
     fi
     echo "[INFO] Check status with: sudo systemctl status dynamic-router.service"
     echo "[INFO] View logs with: sudo journalctl -u dynamic-router.service -f"
+    echo "[INFO] To reset everything: sudo /usr/local/bin/dynamic-router.sh --reset"
     exit 0
 fi
 
@@ -132,6 +197,7 @@ fi
 echo "[INFO] Starting dynamic router setup..."
 echo "[INFO] LAN Interface: $LAN_IFACE"
 echo "[INFO] LAN IP: $LAN_IP_CIDR"
+echo "[INFO] LAN Gateway (DNS): $LAN_IP"
 if [ "$ENABLE_VPN_ROUTING" = true ]; then
     echo "[INFO] VPN Routing: ENABLED"
     echo "[INFO] VPN Subnets File: $VPN_SUBNETS_FILE"
@@ -322,6 +388,57 @@ sudo mkdir -p /etc/iptables
 sudo iptables-save | sudo tee /etc/iptables/rules.v4 > /dev/null
 echo "[INFO] Iptables configured and saved"
 
+# === Configure router's own DNS resolution ===
+configure_router_dns() {
+    echo "[INFO] Configuring router's own DNS resolution..."
+    
+    # Get WAN DNS servers
+    WAN_DNS_SERVERS=""
+    if command -v nmcli &> /dev/null; then
+        WAN_DNS_SERVERS=$(nmcli dev show "$CURRENT_WAN" 2>/dev/null | awk '/IP4.DNS/ {print $2}')
+    fi
+    if [ -z "$WAN_DNS_SERVERS" ] && command -v resolvectl &> /dev/null; then
+        WAN_DNS_SERVERS=$(resolvectl dns "$CURRENT_WAN" 2>/dev/null | awk '{for(i=2;i<=NF;i++) print $i}')
+    fi
+    
+    # Collect DNS servers in array
+    declare -a DNS_ARRAY
+    if [ -n "$WAN_DNS_SERVERS" ]; then
+        for dns in $WAN_DNS_SERVERS; do
+            if [[ "$dns" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+                DNS_ARRAY+=("$dns")
+            fi
+        done
+    fi
+    
+    # Add fallback DNS if no WAN DNS found
+    if [ ${#DNS_ARRAY[@]} -eq 0 ]; then
+        DNS_ARRAY+=("$FALLBACK_DNS1")
+        DNS_ARRAY+=("$FALLBACK_DNS2")
+        echo "[WARNING] No WAN DNS servers found, using fallback DNS"
+    else
+        # Add fallback as backup
+        DNS_ARRAY+=("$FALLBACK_DNS1")
+        DNS_ARRAY+=("$FALLBACK_DNS2")
+    fi
+    
+    # Configure the router's own /etc/resolv.conf
+    # Make sure it's not immutable
+    sudo chattr -i /etc/resolv.conf 2>/dev/null || true
+    
+    # Write directly to /etc/resolv.conf for the router itself
+    {
+        echo "# Router's own DNS resolution (managed by dynamic-router.sh)"
+        echo "# LAN clients will use dnsmasq at $LAN_IP"
+        echo ""
+        for dns in "${DNS_ARRAY[@]}"; do
+            echo "nameserver $dns"
+        done
+    } | sudo tee /etc/resolv.conf > /dev/null
+    
+    echo "[INFO] Router DNS configured: ${DNS_ARRAY[*]}"
+}
+
 # === Update dnsmasq based on WAN DNS ===
 update_dnsmasq_upstream() {
     WAN_DNS_SERVERS=""
@@ -331,9 +448,7 @@ update_dnsmasq_upstream() {
     if [ -z "$WAN_DNS_SERVERS" ] && command -v resolvectl &> /dev/null; then
         WAN_DNS_SERVERS=$(resolvectl dns "$CURRENT_WAN" 2>/dev/null | awk '{for(i=2;i<=NF;i++) print $i}')
     fi
-    if [ -z "$WAN_DNS_SERVERS" ] && [ -f /etc/resolv.conf ]; then
-        WAN_DNS_SERVERS=$(grep '^nameserver' /etc/resolv.conf | awk '{print $2}' | grep -v '^127\.')
-    fi
+    
     declare -a SERVER_LINES
     if [ -n "$WAN_DNS_SERVERS" ]; then
         for dns in $WAN_DNS_SERVERS; do
@@ -371,7 +486,13 @@ update_dnsmasq_upstream() {
         echo "log-dhcp"
     } | sudo tee /etc/dnsmasq.d/lan.conf > /dev/null
     sudo systemctl restart dnsmasq || sudo journalctl -u dnsmasq -n 20 --no-pager
-    echo "[INFO] dnsmasq upstream DNS updated for WAN: $CURRENT_WAN"
+    echo "[INFO] dnsmasq configured:"
+    echo "[INFO]   - LAN clients will use $LAN_IP as DNS server (gateway)"
+    echo "[INFO]   - LAN clients will use $LAN_IP as default gateway"
+    echo "[INFO]   - Upstream DNS: ${WAN_DNS_SERVERS:-$FALLBACK_DNS1 $FALLBACK_DNS2}"
+    
+    # Also configure the router's own DNS
+    configure_router_dns
 }
 
 # === WAN and VPN monitoring ===
@@ -399,7 +520,7 @@ while true; do
     if [ "$NEW_WAN" != "$CURRENT_WAN" ] && [ -n "$NEW_WAN" ]; then
         echo "[INFO] WAN interface changed: $CURRENT_WAN -> $NEW_WAN"
         CURRENT_WAN="$NEW_WAN"
-        update_dnsmasq_upstream
+        update_dnsmasq_upstream  # This also updates router's own DNS
         sudo iptables -t nat -D POSTROUTING -o "$CURRENT_WAN" -j MASQUERADE 2>/dev/null || true
         sudo iptables -t nat -A POSTROUTING -o "$CURRENT_WAN" -j MASQUERADE
     fi

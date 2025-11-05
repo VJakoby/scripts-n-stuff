@@ -90,9 +90,11 @@ if [ $# -lt 3 ]; then
     echo "                        Default: /etc/router/vpn-subnets.txt"
     echo ""
     echo "Examples:"
+    echo "  $0 --run ens33 10.0.0.1/24"
+    echo "  $0 --run ens33 10.0.0.1/24 --vpn --subnets /etc/openvpn/subnets.txt"
     echo "  $0 --install-service eth1 10.0.0.1/24"
     echo "  $0 --install-service eth1 10.0.0.1/24 --vpn"
-    echo "  $0 --run eth1 10.0.0.1/24 --vpn --subnets /etc/openvpn/subnets.txt"
+    echo "  $0 --install-service eth1 10.0.0.1/24 --vpn --subnets /path/to/custom/vpn-subnets.txt"
     echo "  $0 --reset"
     exit 1
 fi

@@ -191,8 +191,8 @@ def draw_box(stdscr, y, x, height, width, title=""):
 
 def show_logs(stdscr):
     stdscr.clear()
-    stdscr.nodelay(0)  # Disable non-blocking mode
-    stdscr.timeout(-1)  # Wait indefinitely for input
+    stdscr.nodelay(0)
+    stdscr.timeout(-1)
     height, width = stdscr.getmaxyx()
     logs = run_command("journalctl -u dynamic-router.service -n 100 --no-pager")
     lines = logs.split('\n')
@@ -208,21 +208,19 @@ def show_logs(stdscr):
         stdscr.addstr(i+2, 0, line[:width-1], color)
     stdscr.refresh()
     
-    # Wait for Q key to return
     while True:
         key = stdscr.getch()
-        if key in [ord('q'), ord('Q'), 27]:  # Q or ESC
+        if key in [ord('q'), ord('Q'), 27]:
             break
     
-    # Restore original settings
     stdscr.nodelay(1)
     stdscr.timeout(1000)
 
 def show_vpn_details(stdscr, status_data):
-    """Show detailed VPN configuration"""
+    """Show detailed VPN configuration with routing rules"""
     stdscr.clear()
-    stdscr.nodelay(0)  # Disable non-blocking mode
-    stdscr.timeout(-1)  # Wait indefinitely for input
+    stdscr.nodelay(0)
+    stdscr.timeout(-1)
     height, width = stdscr.getmaxyx()
     title = "═ VPN ROUTING DETAILS (Press Q to return) ═"
     stdscr.addstr(0, (width-len(title))//2, title, curses.A_BOLD | curses.color_pair(6))
@@ -250,7 +248,7 @@ def show_vpn_details(stdscr, status_data):
         stdscr.addstr(y, 25, "None", curses.color_pair(4))
     
     y += 2
-    stdscr.addstr(y, 2, "Configured Subnets:", curses.A_BOLD)
+    stdscr.addstr(y, 2, "All Configured Subnets:", curses.A_BOLD)
     y += 1
     subnets = status_data.get('vpn_subnets', [])
     if subnets:
@@ -262,16 +260,32 @@ def show_vpn_details(stdscr, status_data):
     else:
         stdscr.addstr(y, 4, "No subnets configured", curses.color_pair(4))
     
+    # Show routing rules if VPN is active
+    if status_data.get('vpn_active') and vpn_ifaces:
+        y = height - 10
+        stdscr.addstr(y, 2, "Active Routing Rules:", curses.A_BOLD | curses.color_pair(6))
+        y += 1
+        
+        # Check for routing rules
+        for iface in vpn_ifaces[:2]:
+            routes = run_command(f"ip route show dev {iface} 2>/dev/null | head -3")
+            if routes:
+                stdscr.addstr(y, 4, f"{iface}:", curses.color_pair(3))
+                y += 1
+                for route_line in routes.split('\n')[:2]:
+                    if y >= height - 3:
+                        break
+                    stdscr.addstr(y, 6, route_line[:width-8], curses.color_pair(1))
+                    y += 1
+    
     stdscr.addstr(height-2, 2, "Press Q to return...", curses.color_pair(5))
     stdscr.refresh()
     
-    # Wait for Q key to return
     while True:
         key = stdscr.getch()
-        if key in [ord('q'), ord('Q'), 27]:  # Q or ESC
+        if key in [ord('q'), ord('Q'), 27]:
             break
     
-    # Restore original settings
     stdscr.nodelay(1)
     stdscr.timeout(1000)
 
@@ -329,7 +343,6 @@ def main(stdscr):
         status_text = "● RUNNING" if status_data.get('is_running') else "● STOPPED"
         stdscr.addstr(y, 2, status_text, status_color | curses.A_BOLD)
         
-        # Show mode
         run_mode = status_data.get('run_mode', 'unknown')
         if run_mode == "service":
             mode_text = "(systemd service)"
@@ -340,44 +353,74 @@ def main(stdscr):
         stdscr.addstr(y, 15, mode_text, curses.color_pair(5))
         stdscr.addstr(y, 45, f"Uptime: {status_data.get('uptime','N/A')}", curses.color_pair(5))
 
-        # NETWORK box
+        # NETWORK box - now taller to accommodate VPN info
         y += 2
-        draw_box(stdscr, y, 2, 9, width-4, "NETWORK INTERFACES")
+        box_height = 13 if status_data.get('vpn_routing_enabled') else 9
+        draw_box(stdscr, y, 2, box_height, width-4, "NETWORK INTERFACES")
         y += 1
+        
         stdscr.addstr(y, 4, "WAN:", curses.A_BOLD)
         stdscr.addstr(y, 10, f"{status_data.get('wan_iface','N/A')} ({status_data.get('wan_ip','N/A')})", curses.color_pair(3))
         stdscr.addstr(y, 45, "DNS:", curses.A_BOLD)
-        stdscr.addstr(y, 50, ", ".join(status_data.get('wan_dns',[])), curses.color_pair(1))
+        stdscr.addstr(y, 50, ", ".join(status_data.get('wan_dns',[])[:2]), curses.color_pair(1))
 
         y += 1
         stdscr.addstr(y, 4, "LAN:", curses.A_BOLD)
         stdscr.addstr(y, 10, f"{status_data.get('lan_iface','N/A')} ({status_data.get('lan_ip','N/A')})", curses.color_pair(3))
         stdscr.addstr(y, 45, "DNS:", curses.A_BOLD)
-        stdscr.addstr(y, 50, ", ".join(status_data.get('lan_dns',[])), curses.color_pair(3))
+        stdscr.addstr(y, 50, ", ".join(status_data.get('lan_dns',[])[:2]), curses.color_pair(3))
 
-        y += 1
+        # VPN Routing section - expanded on main dashboard
+        y += 2
         stdscr.addstr(y, 4, "VPN Routing:", curses.A_BOLD)
         if status_data.get('vpn_routing_enabled'):
             stdscr.addstr(y, 18, "ENABLED", curses.color_pair(3) | curses.A_BOLD)
-            if status_data.get('vpn_active'):
-                vpn_ifaces = status_data.get('vpn_interfaces', [])
-                vpn_text = f" ({', '.join(vpn_ifaces[:2])})"
-                if len(vpn_ifaces) > 2:
-                    vpn_text = f" ({vpn_ifaces[0]}, +{len(vpn_ifaces)-1} more)"
-                stdscr.addstr(y, 26, vpn_text, curses.color_pair(1))
-            else:
-                stdscr.addstr(y, 26, "(no active VPN)", curses.color_pair(4))
-            
-            # Show subnet count
-            subnet_count = len(status_data.get('vpn_subnets', []))
-            if subnet_count > 0:
-                stdscr.addstr(y, 50, f"Subnets: {subnet_count}", curses.color_pair(6))
-                stdscr.addstr(y, 65, "[V for details]", curses.color_pair(5))
         else:
             stdscr.addstr(y, 18, "DISABLED", curses.color_pair(4))
+        
+        stdscr.addstr(y, 35, "Active VPN Interfaces:", curses.A_BOLD)
+        vpn_ifaces = status_data.get('vpn_interfaces', [])
+        if vpn_ifaces:
+            iface_text = ", ".join(vpn_ifaces[:2])
+            if len(vpn_ifaces) > 2:
+                iface_text += f" +{len(vpn_ifaces)-2}"
+            stdscr.addstr(y, 60, iface_text, curses.color_pair(3))
+        else:
+            stdscr.addstr(y, 60, "None", curses.color_pair(4))
+        
+        # Show VPN subnets on dashboard
+        if status_data.get('vpn_routing_enabled'):
+            y += 1
+            stdscr.addstr(y, 4, "VPN Subnets:", curses.A_BOLD)
+            subnets = status_data.get('vpn_subnets', [])
+            if subnets:
+                # Show first 2 subnets inline
+                subnet_display = ", ".join(subnets[:2])
+                if len(subnets) > 2:
+                    subnet_display += f" +{len(subnets)-2} more"
+                stdscr.addstr(y, 18, subnet_display[:width-25], curses.color_pair(1))
+                
+                # If there are more subnets, show them on additional lines
+                if len(subnets) > 2:
+                    y += 1
+                    remaining = subnets[2:5]  # Show up to 3 more
+                    for subnet in remaining:
+                        if y >= box_height - 2:
+                            break
+                        stdscr.addstr(y, 18, subnet, curses.color_pair(1))
+                        y += 1
+                    
+                    if len(subnets) > 5:
+                        stdscr.addstr(y, 18, f"... {len(subnets)-5} more", curses.color_pair(5))
+            else:
+                stdscr.addstr(y, 18, "None configured", curses.color_pair(4))
+            
+            # Add hint to view more details
+            y += 1
+            stdscr.addstr(y, 4, "[Press V for full VPN details]", curses.color_pair(5))
 
         # Statistics
-        y += 2
+        y = 2 + box_height + 1
         draw_box(stdscr, y, 2, 6, width//2-3, "STATISTICS")
         y += 1
         stdscr.addstr(y, 4, f"Downloaded:  {status_data.get('rx_bytes','0 B')}", curses.color_pair(1))
@@ -387,7 +430,7 @@ def main(stdscr):
         stdscr.addstr(y, 4, f"Connections: {status_data.get('connections',0)}", curses.color_pair(1))
 
         # LAN Clients
-        clients_y = y-3
+        clients_y = 2 + box_height + 1
         draw_box(stdscr, clients_y, width//2+1, 6, width//2-3, "LAN CLIENTS")
         clients_y += 1
         stdscr.addstr(clients_y, width//2+3, f"Total: {status_data.get('lan_clients',0)}", curses.color_pair(6)|curses.A_BOLD)
@@ -402,7 +445,7 @@ def main(stdscr):
         y = height-4
         stdscr.addstr(y, 2, "─"*(width-4), curses.color_pair(5))
         y += 1
-        controls = "[Q]uit  [R]estart  [S]top  [L]ogs  [V]PN Info  [H]elp"
+        controls = "[Q]uit  [R]estart  [S]top  [L]ogs  [V]PN Details  [H]elp"
         stdscr.addstr(y, (width-len(controls))//2, controls, curses.A_BOLD|curses.color_pair(6))
 
         stdscr.refresh()
@@ -427,23 +470,21 @@ def main(stdscr):
                 show_vpn_details(stdscr, status_data)
             elif key in [ord('h'), ord('H')]:
                 stdscr.clear()
-                stdscr.nodelay(0)  # Disable non-blocking mode
-                stdscr.timeout(-1)  # Wait indefinitely for input
+                stdscr.nodelay(0)
+                stdscr.timeout(-1)
                 help_text = ["═══ HELP ═══","","Q - Quit","R - Restart router service","S - Stop router service",
-                             "L - View full logs","V - View VPN routing details","H - Show this help","","Dashboard refreshes every second.","",
+                             "L - View full logs","V - View detailed VPN configuration","H - Show this help","","Dashboard refreshes every second.","",
                              "Press Q to return..."]
                 for i,line in enumerate(help_text):
                     attr = curses.A_BOLD if i==0 else curses.A_NORMAL
                     stdscr.addstr(i+2,(width-len(line))//2,line,attr)
                 stdscr.refresh()
                 
-                # Wait for Q key to return
                 while True:
                     key = stdscr.getch()
-                    if key in [ord('q'), ord('Q'), 27]:  # Q or ESC
+                    if key in [ord('q'), ord('Q'), 27]:
                         break
                 
-                # Restore original settings
                 stdscr.nodelay(1)
                 stdscr.timeout(1000)
         except KeyboardInterrupt:

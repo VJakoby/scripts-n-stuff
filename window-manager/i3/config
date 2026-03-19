@@ -1,73 +1,88 @@
-## -------------------------------------- Custom i3 config file ---------------------------------------------- ##
+# i3 config file (v4)
+#
 # Please see https://i3wm.org/docs/userguide.html for a complete reference!
 
-# ----------------------------- Setting MOD to Start(Win) button, which is mod 4. ----------------------------- #
+## -------------------------------------- Custom ---------------------------------------------- #
+# Mod 4 = Start(Win)
 set $mod Mod4
-# ----------------------------- i3blocks statusbar, config location in ~/.config/i3blocks/ ----------------------------- #
+
+# --- Window Style & Gaps ---
+# Hide titlebars for a modern look
+for_window [class=".*"] border pixel 2
+
+# Gaps settings
+gaps inner 5
+gaps outer 0
+smart_gaps on     # Gaps only appear when 2+ windows are open
+smart_borders on  # Borders disappear when only one window is open
+
+# --- Muted Slate Theme (Tokyo Night inspired) ---
+#                       border  bg      text    indicator child_border
+client.focused          #565f89 #24283b #ffffff #7aa2f7   #565f89
+client.focused_inactive #1a1b26 #1a1b26 #565f89 #1a1b26   #1a1b26
+client.unfocused        #1a1b26 #1a1b26 #565f89 #1a1b26   #1a1b26
+client.urgent           #f7768e #db4b4b #ffffff #db4b4b   #f7768e
+
 bar {
     position bottom
     status_command i3blocks
-    font pango: DejaVu Sans Mono Bold 11
-    height 26
+    font pango: Jetbrains Mono Bold
+    height 30
+    
     colors {
-        background #2c2f30
-        statusline #ffffff
-        separator  #aaaaaa
-        focused_workspace  #4b4f8f #4b4f8f #ffffff
-        active_workspace   #444444 #5a5e9e #ffffff
-        inactive_workspace #2a2a2a #2a2a2a #888888
-        urgent_workspace   #900000 #4b4f8f #ffffff
-        binding_mode       #900000 #4b4f8f #ffffff
-    }
+        background #1a1b26
+        statusline #a9b1d6
+        separator  #414868
+
+        #                  border  bg      text
+        focused_workspace  #565f89 #24283b #ffffff
+        active_workspace   #414868 #1f2335 #ffffff
+        inactive_workspace #1a1b26 #1a1b26 #565f89
+        urgent_workspace   #f7768e #db4b4b #ffffff
+    } 
 }
-# ---------------- Titlebars, etc colors -------------------- #
-# Current color is "purple"
-# ---------------------|border |background |text  |indicator |child_border
-client.focused          #5b5fd8 #5b5fd8 #ffffff #5b5fd8 #5b5fd8
-client.focused_inactive #3c3c3c #2a2a2a #aaaaaa #292d2e #2a2a2a
-client.unfocused        #3a3a3a #2a2a2a #888888 #292d2e #2a2a2a
-client.urgent           #2f343a #900000 #ffffff #900000 #900000
 
-# ----------------------------- Polybar statusbar, config location in ~/.config/polybar/. ----------------------------- #
-# Choose either polybar or i3blocks
-# Kill any existing polybar instances
-# exec --no-startup-id killall -q polybar
-# Launch your polybar config
-# exec_always --no-startup-id polybar main
+# Short command for starting Chromium
+bindsym $mod+shift+c exec "chromium"
 
-# ----------------------------- Wallpaper: Setting a wallpaper, put in /Pictures/wallpaper.jpg ----------------------------- #
-# wget https://www.kali.org/wallpapers/images/YEAR/kali-NAME.jpg
-# cp kali-NAME.jpg ~/Pictures/wallpaper.jpg
-exec_always --no-startup-id feh --bg-scale ~/Pictures/wallpaper.jpg
+# Short command for starting Firefox
+bindsym $mod+shift+f exec "firefox"
 
-# ----------------------------- Rofi launcher
+# Wallpaper
+# setting a wallpaper --> ~/Pictures/wallpaper.jpg
+exec_always --no-startup-id feh --bg-fill ~/Pictures/wallpaper.png
+#exec --no-startup-id picom
+
+# Rofi launcher
 # config location --> ~/.config/rofi/config.rasi
-bindsym $mod+d exec "rofi -show combi"
+bindsym $mod+d exec "rofi -show drun"
 
-# ----------------------------- Setting up scratchpad
+# ------- Setting up scratchpad
 bindsym $mod+minus scratchpad show
 bindsym $mod+Shift+minus move scratchpad
 
-## ----------------------------------------------------------------------------------------------------- ##
+## ---------------------------------------------------------------------------------------- #
+
 
 # This font is widely installed, provides lots of unicode glyphs, right-to-left
 # text rendering and scalability on retina/hidpi displays (thanks to pango).
-font pango: Cantarell Bold 11
-# font pango: DejaVu Sans Mono Bold 11
-
+#font pango:DejaVu Sans Mono Bold 11
+font pango: Cantarell Bold 12
 # Start XDG autostart .desktop files using dex. See also
 # https://wiki.archlinux.org/index.php/XDG_Autostart
 
-exec --no-startup-id setxkbmap se
+exec_always --no-startup-id setxkbmap se
 
 exec --no-startup-id dex --autostart --environment i3
 
-# ----------------------------- XSS Lock
 # The combination of xss-lock, nm-applet and pactl is a popular choice, so
 # they are included here as an example. Modify as you see fit.
+
 # xss-lock grabs a logind suspend inhibit lock and will use i3lock to lock the
 # screen before suspend. Use loginctl lock-session to lock your screen.
-# exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
+#exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
+bindsym $mod+ctrl+l exec --no-startup-id i3lock-fancy
+exec --no-startup-id xautolock -time 15 -locker "i3lock-fancy"
 
 # NetworkManager is the most popular way to manage wireless networks on Linux,
 # and nm-applet is a desktop environment-independent system tray GUI for it.
@@ -86,6 +101,10 @@ floating_modifier $mod
 # move tiling windows via drag & drop by left-clicking into the title bar,
 # or left-clicking anywhere into the window while holding the floating modifier.
 tiling_drag modifier titlebar
+
+# start a terminal
+#bindsym $mod+Return exec qterminal
+bindsym $mod+Return exec terminator
 
 # kill focused window
 bindsym $mod+Shift+q kill
@@ -178,7 +197,7 @@ bindsym $mod+Shift+9 move container to workspace number $ws9
 bindsym $mod+Shift+0 move container to workspace number $ws10
 
 # reload the configuration file
-bindsym $mod+Shift+c reload
+#bindsym $mod+Shift+c reload
 # restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
 bindsym $mod+Shift+r restart
 # exit i3 (logs you out of your X session)
@@ -210,16 +229,3 @@ mode "resize" {
 }
 
 bindsym $mod+r mode "resize"
-
-# ----------------------------- Application quick start ----------------------------- #
-# Firefox
-bindsym $mod+Shift+f exec firefox
-
-# Burpsuite
-bindsym $mod+Shift+c exec burpsuite
-
-# Zaproxy
-bindsym $mod+Shift+z exec zaproxy
-
-# Terminal
-bindsym $mod+Return exec qterminal

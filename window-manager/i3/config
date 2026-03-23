@@ -1,32 +1,28 @@
-# i3 config file (v4)
-#
-# Please see https://i3wm.org/docs/userguide.html for a complete reference!
-
-## -------------------------------------- Custom ---------------------------------------------- #
+## -------------------------------------- CUSTOM I3 CONFIG VJAKOBY ---------------------------------------------- #
 # Mod 4 = Start(Win)
 set $mod Mod4
 
 # --- Window Style & Gaps ---
 # Hide titlebars for a modern look
-for_window [class=".*"] border pixel 2
+for_window [class=".*"] border pixel 3
 
 # Gaps settings
-gaps inner 5
+gaps inner 8
 gaps outer 0
 smart_gaps on     # Gaps only appear when 2+ windows are open
 smart_borders on  # Borders disappear when only one window is open
 
 # --- Muted Slate Theme (Tokyo Night inspired) ---
 #                       border  bg      text    indicator child_border
-client.focused          #565f89 #24283b #ffffff #7aa2f7   #565f89
-client.focused_inactive #1a1b26 #1a1b26 #565f89 #1a1b26   #1a1b26
+client.focused #565f89 #3b4261 #ffffff #7aa2f7 #565f89
+client.focused_inactive #1a1b26 #2a2e3f #a9b1d6 #1a1b26 #1a1b26
 client.unfocused        #1a1b26 #1a1b26 #565f89 #1a1b26   #1a1b26
 client.urgent           #f7768e #db4b4b #ffffff #db4b4b   #f7768e
 
 bar {
     position bottom
     status_command i3blocks
-    font pango: Jetbrains Mono Bold
+    font pango: DejaVu Sans Mono Bold 12
     height 30
     
     colors {
@@ -47,6 +43,9 @@ bindsym $mod+shift+c exec "chromium"
 
 # Short command for starting Firefox
 bindsym $mod+shift+f exec "firefox"
+
+# i3-auto-layour
+#exec_always --no-startup-id i3-auto-layout
 
 # Wallpaper
 # setting a wallpaper --> ~/Pictures/wallpaper.jpg

@@ -27,7 +27,7 @@ bar {
     
     colors {
         background #1a1b26
-        statusline #a9b1d6
+        statusline #e6e9ef
         separator  #414868
 
         #                  border  bg      text

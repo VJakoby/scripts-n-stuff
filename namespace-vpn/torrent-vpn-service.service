@@ -1,0 +1,15 @@
+#/etc/systemd/system/torrent-vpn.service
+
+[Unit] 
+Description=Torrent namespace WireGuard VPN 
+Requires=torrent-netns.service 
+After=torrent-netns.service 
+Before=qbittorrent-vpn.service 
+
+[Service] Type=oneshot 
+ExecStart=/usr/local/sbin/torrent-vpn.sh 
+ExecStop=/usr/bin/ip netns exec torrent wg-quick down /etc/wireguard/azire.conf 
+RemainAfterExit=yes 
+
+[Install] 
+WantedBy=multi-user.target

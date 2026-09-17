@@ -1,0 +1,23 @@
+/etc/nftables.d/torrent-killswitch.nft
+
+table inet killswitch {
+    chain output {
+        type filter hook output priority filter;
+        policy drop;
+
+        # Loopback
+        oifname "lo" accept
+
+        # Existing/return traffic
+        ct state established,related accept
+
+        # VPN traffic
+        oifname "azirevpn" accept
+
+        # Host <-> namespace
+        ip daddr 10.200.0.0/24 accept
+
+        # WireGuard endpoint
+        oifname "veth-torrent" ip daddr X.X.X.X.X udp dport 51820 accept
+    }
+}

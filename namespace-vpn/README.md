@@ -1,6 +1,8 @@
-# AzireVPN / qBittorrent namespace
+# AzireVPN / qBittorrent namespace VPN
 
-qBittorrent runs in a dedicated network namespace. Only traffic from the namespace uses AzireVPN(or other wireguard VPN); host/Docker traffic uses the normal ISP connection.
+- qBittorrent runs in a dedicated network namespace. 
+- Only traffic from the namespace uses AzireVPN(or other wireguard VPN);
+- Host/Docker traffic uses the normal ISP connection.
 
 This is essentially a more complicated way instead of using Gluetun as a docker container essentially.
 

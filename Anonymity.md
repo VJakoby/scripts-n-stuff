@@ -1,4 +1,4 @@
-### Commands & Scripts
+# Anonymitiy
 ```
 #### WHOAMI 
 *Whoami provides enhanced privacy, anonymity for Debian linux distributions*
